@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">
+		<title></title>
+			<style type="text/css">
+				#baller {
+					background-color: red;
+					width: 50%;
+					margin: 0 auto;
+					height: 100px;
+					text-align: center;
+
+				}
+			</style>
+		<!--put your external stylesheet links here-->
+		<link rel="stylesheet" href="css/style.css">
+		<!--[if IE<9]>
+			<link rel="stylesheet" href="css/style.ie.css">
+		<![endif]-->
+	</head>
+
+	<body>
+		<div id="baller">
+			Baller Rectangle.
+		</div>
+
+		<script type="text/javascript">
+			var ballerdiv = document.getElementById("baller");
+			ballerdiv.addEventListener("click", function(){
+				alert("Baller Popup!");
+			});
+		</script>
+		
+
+		<script type="text/javascript" src="js/main.js"></script>
+	</body>
+</html>
