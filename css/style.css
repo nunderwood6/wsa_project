@@ -77,6 +77,12 @@ h3 {
 	opacity: .5;
 }
 
+.circles.highlight {
+	opacity: 1;
+	fill: #666;
+	stroke: #111;
+}
+
 @media only screen and (min-width: 1000px) {
 	#mapid {
 		display: inline-block;

@@ -129,7 +129,7 @@ var xDom = function(att) {
 var xScaleGen = function(att) {
       return d3.scaleLinear()
                 .domain(xDom(att))
-                .range([25, 375]);
+                .range([10, 340]);
 } ;
 
 //xScale tests
@@ -145,7 +145,7 @@ console.log(xAttScales[0](.3));
 /// create yScale
 var yScale = d3.scaleLinear()
                 .domain([0, 4])
-                .range([10,340]);
+                .range([10,390]);
 
 
 ///create circles
@@ -153,18 +153,52 @@ for(i=0;i<fakeAtt.length;i++) {
 
     var att = fakeAtt[i];
 
-    vizBox.selectAll(att)
+    vizBox.append("text")
+          .attr("class", `label ${att}`)
+          .attr()
+
+
+    vizBox.append("g")
+      .attr("class", att)
+        .selectAll(att)
         .data(wsaData)
         .enter()
         .append("circle")
-          .attr("class", "circles")
+          .attr("class", function(d) {
+            return "circles " + d["Area"].replace(/ /g, "").replace("/", "");
+            })
           .attr("cx", function(d) {
             return xAttScales[i](d[att]);
           })
           .attr("cy", function(d){
             return yScale(i);
           })
-          .attr("r", 5);
+          .attr("r", 5)
+          .on("mouseover", function(d){
+            console.log(d["Area"].replace(/ /g, "").replace("/", ""));
+            vizBox.selectAll(`.${d["Area"].replace(/ /g, '').replace("/", "")}`)
+              .classed("highlight", true);
+
+          })
+          .on("mouseout", function(d){
+            vizBox.selectAll(`.${d["Area"].replace(/ /g, "").replace("/", "")}`)
+                  .classed("highlight", false);
+                  
+
+          });
+
+
+
+/*
+    var highlighter = function ()
+          /*.on("mouseout", function(d){
+              d3.selectAll(d["Area"])
+              .classed("highlight", false);
+          });
+
+    var xAxisGen = d3.axisBottom(xAttScales[i])
+                      .ticks(0);
+                      */
 
 }
 
