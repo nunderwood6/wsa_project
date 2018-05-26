@@ -3,37 +3,37 @@
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width">
-		<title></title>
-			<style type="text/css">
-				#baller {
-					background-color: red;
-					width: 50%;
-					margin: 0 auto;
-					height: 100px;
-					text-align: center;
-
-				}
-			</style>
-		<!--put your external stylesheet links here-->
-		<link rel="stylesheet" href="css/style.css">
+		<title>Leaflet Practice</title>
+		<link href="https://fonts.googleapis.com/css?family=Playfair+Display" rel="stylesheet">
+		<link href='https://fonts.googleapis.com/css?family=Lato' rel='stylesheet'>
+		<link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css"
+	   integrity="sha512-Rksm5RenBEKSKFjgI3a41vrjkw4EVPlJ3+OiI65vTjIdo9brlAacEuKOiQ5OFh7cOI1bkDwLqdLw3Zg0cRJAAQ=="
+	   crossorigin=""/>
+		<link rel="stylesheet" type="text/css" href="css/style.css">
 		<!--[if IE<9]>
 			<link rel="stylesheet" href="css/style.ie.css">
 		<![endif]-->
 	</head>
 
 	<body>
-		<div id="baller">
-			Baller Rectangle.
+
+		<div id="intro">
+			<h1> Wilder than the National Parks </h1>
+			<img src="photos/terry_badlands.jpg">
+			<p> Despite <a href="http://missoulian.com/news/local/daines-gianforte-discount-poll-showing-broad-support-for-keeping-wilderness/article_608c81e3-0b36-58c7-80e7-1abd8c309d46.html"> staunch public opposition </a> and minimal local input, Sen. Steve Daines (R-MT) and Congressman Greg Gianforte (R-MT) are determined to remove wilderness protections for over 800,000 acres of pristine Montana wilderness study areas, some of which ecologist Travis Belote calls, "quantifiably wilder than the National Parks".
+			</p>
+			<!--
+			Ecologically diverse and invaluable as habitat, the 28 pristine Wilderness Study Areas the Montana lawmakers want to open to mining and logging interests comprise an area nearly the size of Rhode Island, and five times the size of Zion National Park. Despite staunch public opposition and a remarkable lack of local input, neither Daines nor Gianforte have rescinded their legislation.
+		-->
 		</div>
+		<div id="mapid"></div>
+		<div id="vizBox"></div>
 
-		<script type="text/javascript">
-			var ballerdiv = document.getElementById("baller");
-			ballerdiv.addEventListener("click", function(){
-				alert("Baller Popup!");
-			});
-		</script>
-		
-
-		<script type="text/javascript" src="js/main.js"></script>
+		<script src="https://unpkg.com/leaflet@1.3.1/dist/leaflet.js"
+	   integrity="sha512-/Nsx9X4HebavoBvEBuyp3I7od5tA0UzAxs+j83KgC8PU0kgB4XiK4Lfe4y4cgBtaRJQEIFCW+oC506aPT2L1zw=="
+	   crossorigin=""></script>
+	   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+	   <script src="http://d3js.org/d3.v4.min.js"></script>
+		<script src="js/main.js"></script>
 	</body>
 </html>
