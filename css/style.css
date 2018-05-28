@@ -31,12 +31,10 @@ h3 {
 	margin: 0;
 }
 
-
-
 #intro h1 {
 
 		font-weight: normal;
-		line-height: 1.2;
+		line-height: 1;
 		font-size: 44px;
 		font-family: 'Playfair Display', serif;
 		font-style: underline;
@@ -44,10 +42,6 @@ h3 {
 		margin: 0 0 10px 0;
 }
 
-#vizBox {
-	width: 350px;
-	height: 400px;
-}
 
 #mapid {
 	width: 600px;
@@ -72,6 +66,11 @@ h3 {
     color:#fff;
 }
 
+.leaflet-interactive.daines {
+	fill-opacity: 1;
+}
+
+
 .circles {
 	fill: #999;
 	opacity: .5;
@@ -92,3 +91,22 @@ h3 {
 		display: inline-block;
 	}
 }
+
+
+@media only screen and (max-width: 1000px) {
+	#mapid {
+		margin: 0 auto;
+	}
+
+	#vizBox {
+		margin: 0 auto;
+	}
+
+}
+
+@media only screen and (max-width: 650px) {
+	#mapid {
+		width: 80%;
+	}
+}
+
