@@ -19,9 +19,8 @@ L.tileLayer('https://{s}.tile.thunderforest.com/landscape/{z}/{x}/{y}.png?apikey
 
 var dStyle = {
     "color": "#50267c",
-    "weight": 1,
-    "className": "daines"
-};
+    "weight": 1
+  };
 var dHighStyle = {
   "color": "#4411ff",
   "weight": 1,
@@ -42,7 +41,29 @@ var gHighStyle = {
   "fillOpacity:": 0.4
 };
 
-//add Daines WSA's
+
+////////hacky solution to get latlong bounds for d3 event
+var boundsKey = {};
+
+var leafZoom = function(key) {
+  console.log(key);
+  myMap.fitBounds(boundsKey[key], {maxZoom: 9});
+  
+  };
+
+///format wsa names to match d3 data
+var leafClass = function(feat) {
+  return feat.properties["MANAME"].replace(" Wilderness Study Area", "").replace(/ /g, "").replace("/", "");
+};
+
+///click function handler for leaflet
+var onClick = function(e) {
+  myMap.fitBounds(e.target.getBounds(), {maxZoom: 9});
+
+};
+
+console.log(boundsKey);
+/////////////add Daines WSA's
 $.getJSON('data/daines.geojson', function(data){
 
   L.geoJson(data, {
@@ -50,23 +71,37 @@ $.getJSON('data/daines.geojson', function(data){
     style: dStyle,
 
 onEachFeature: function(feature, layer){
+
+  ///store bounds in map for access by d3 listener
+  boundsKey[leafClass(feature)] = layer.getBounds();
+
+  //set layer style
+  layer.setStyle({"className": leafClass(feature)});
+
+  ///add basic Leaflet popup
   layer.bindPopup("<h3>" + feature.properties["SourceName"] + 
-  	"</h3><p>" + d3.format(',')(Math.floor(feature.properties["ACRES"])) + " Acres, " + feature.properties["MANAGER"] + "</p>");
-  layer.on("click", function (e){
-  	myMap.fitBounds(e.target.getBounds(), {maxZoom: 9});
+  	"</h3><p>" + d3.format(',')(Math.floor(feature.properties["ACRES"])) + 
+    " Acres, " + feature.properties["MANAGER"] + "</p>");
+
+  layer.on("click", function(e){
+      onClick(e);
+      dotClickFocus(leafClass(feature));
   });
+
   layer.on("mouseover",function (e){
     layer.setStyle(dHighStyle);
   });
+
   layer.on("mouseout", function(e){
     layer.setStyle(dStyle);
   });
+  
 }
 
   }).addTo(myMap);
 });
 
-////add Gianforte WSA's
+/////////////////add Gianforte WSA's
 $.getJSON('data/gforte.geojson', function(data){
 
   L.geoJson(data, {
@@ -74,10 +109,14 @@ $.getJSON('data/gforte.geojson', function(data){
     style: gStyle,
 
 onEachFeature: function(feature, layer){
+  boundsKey[leafClass(feature)] = layer.getBounds();
+  layer.setStyle({"className": leafClass(feature)});
   layer.bindPopup("<h3>" + feature.properties["SourceName"] + 
   	"</h3><p>" + d3.format(',')(Math.floor(feature.properties["ACRES"])) + " Acres, Bureau of Land Management</p>");
-  layer.on("click", function (e){
-  	myMap.fitBounds(e.target.getBounds(), {maxZoom: 9});
+  layer.on("click", function(e){
+      onClick(e);
+      dotClickFocus(`.${leafClass(feature)}`);
+      console.log(leafClass(feature));
   });
   layer.on("mouseover",function (e){
     layer.setStyle(gHighStyle);
@@ -90,7 +129,8 @@ onEachFeature: function(feature, layer){
   }).addTo(myMap);
 });
 
-//////////////// Linked Dot Plot//////////////////////
+
+//////////////// Linked Dot Plot///////////////////////////////////////////
 
 
 var vizW = function() {
@@ -98,26 +138,39 @@ var vizW = function() {
 
     if(win >= 1000) {
       return (win - 700);
-    } else if( (win < 1000) && (window > 650)) {
-      return 500;
+    } else if( ((win < 1000) && (win > 650)) ) {
+      return 600;
     } else {
-      return win - 50;
+      return (win - 50);
     }
 };
 
 var vizH = 400;
 
-console.log(vizW());
-
 
 var vizBox = d3.select("#vizBox")
-                  .attr("width", vizW())
-                  .attr("height", vizH)
+                  .style("width", `${vizW()}px`)
+                  .style("height", vizH)
                   .append("svg")
                     .attr("class", "vizSvg")
                     .attr("width", vizW())
                     .attr("height", vizH);
                     
+
+var compressor = function(str) {
+    return str.replace(/ /g, "").replace("/", "");
+};
+
+var dotClickFocus = function (wsa) {
+  vizBox.selectAll("circle")
+                      .classed("strong focus", false)
+                      .attr("r", 5);
+
+              vizBox.selectAll(wsa)
+                  .classed("strong focus", true)
+                  .attr("r", 10);
+};
+
 
 //add wsa data
 d3.csv("data/wsa_data.csv", function (error, wsaData){
@@ -134,6 +187,8 @@ for(var att of fakeAtt) {
 }
 
 console.log(wsaData);
+
+
 
 ///dynamic attribute domain finder
 
@@ -155,27 +210,25 @@ var xScaleGen = function(att) {
 
 //xScale tests
 var wildScale = xScaleGen(fakeAtt[0]);
-console.log(wildScale(.3));
 
 var xAttScales = fakeAtt.map(function(att){
       return xScaleGen(att);
 });
-
-console.log(xAttScales[0](.3));
 
 /// create yScale
 var yScale = d3.scaleLinear()
                 .domain([0, (fakeAtt.length-1)])
                 .range([30, vizH - 10]);
 
-var compressor = function(str) {
-    return str.replace(/ /g, "").replace("/", "");
-};
-
 ///create circles
 for(i=0;i<fakeAtt.length;i++) {
 
     var att = fakeAtt[i];
+
+//sort data so drawing order is right to left
+    var sorted = wsaData.sort(function(a,b) {
+        return b[att] - a[att];
+    });
 
     vizBox.append("text")
           .attr("class", `label ${att}`)
@@ -185,11 +238,11 @@ for(i=0;i<fakeAtt.length;i++) {
     vizBox.append("g")
       .attr("class", att)
         .selectAll(att)
-        .data(wsaData)
+        .data(sorted)
         .enter()
         .append("circle")
           .attr("class", function(d) {
-            return "circles " + compressor(d["Area"]);
+            return att + " circles " + compressor(d["Area"]);
             })
           .attr("cx", function(d) {
             return xAttScales[i](d[att]);
@@ -199,7 +252,6 @@ for(i=0;i<fakeAtt.length;i++) {
           })
           .attr("r", 5)
           .on("mouseover", function(d){
-            console.log(d["Area"].replace(/ /g, "").replace("/", ""));
             vizBox.selectAll(`.${compressor(d["Area"])}`)
               .classed("highlight", true);
 
@@ -207,30 +259,18 @@ for(i=0;i<fakeAtt.length;i++) {
           .on("mouseout", function(d){
             vizBox.selectAll(`.${compressor(d["Area"])}`)
                   .classed("highlight", false);
-                  
+          })
+          .on("click", function(d){
 
+              dotClickFocus(`.${compressor(d["Area"])}`);
+              leafZoom(compressor(d["Area"]));
           });
 
 
-
-/*
-    var highlighter = function ()
-          /*.on("mouseout", function(d){
-              d3.selectAll(d["Area"])
-              .classed("highlight", false);
-          });
-
-    var xAxisGen = d3.axisBottom(xAttScales[i])
-                      .ticks(0);
-                      */
-
-}
+} ////end for loop creating dots for each attribute
 
 
-
-});
-
-
+}); ///end d3 callback function
 
 
 
