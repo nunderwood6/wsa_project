@@ -87,7 +87,7 @@ div#title {
 		position: absolute;
 		left: 5px;
 		top: 5px;
-		width: 300px;
+		width: 100%;
 		font-weight: normal;
 		line-height: 1;
 		font-size: 16px;
@@ -98,6 +98,14 @@ div#title h2 {
 	margin: 0;
 }
 
+div#toolTip {
+	position: absolute;
+
+}
+
+div#toolTip.focus.hidden {
+	display: none;
+}
 
 .baller {
 	color: #fff !important; 
@@ -114,7 +122,7 @@ div#title h2 {
 }
 
 .label {
-	text-decoration: underline;
+	font-size: 18px;
 }
 
 

@@ -45,7 +45,6 @@ var gHighStyle = {
 var layerKey = {};
 
 var leafZoom = function(key) {
-  console.log(key);
   var layer = layerKey[key][0],
       feature = layerKey[key][1];
 
@@ -62,14 +61,17 @@ var leafClass = function(feat) {
   return feat.properties["MANAME"].replace(" Wilderness Study Area", "").replace(/ /g, "").replace("/", "");
 };
 
+var leafClassy = function(feat) {
+  return feat.replace(" Wilderness Study Area", "").replace(/ /g, "").replace("/", "");
+}
+
 ///click function handler for leaflet
 var onClick = function(e, layer) {
   myMap.fitBounds(e.target.getBounds(), {maxZoom: 9});
   layer.setStyle({weight: 5});
-  console.log(layer);
 };
 
-console.log(layerKey);
+
 /////////////add Daines WSA's
 $.getJSON('data/daines.geojson', function(data){
 
@@ -91,7 +93,7 @@ onEachFeature: function(feature, layer){
 
   layer.on("click", function(e){
       onClick(e, layer);
-      dotClickFocus(leafClass(feature));
+      dotClickFocus(feature.properties["MANAME"]);
   });
 
   layer.on("mouseover",function (e){
@@ -120,7 +122,7 @@ onEachFeature: function(feature, layer){
   	"</h3><p>" + d3.format(',')(Math.floor(feature.properties["ACRES"])) + " Acres, Bureau of Land Management</p>");
   layer.on("click", function(e){
       onClick(e, layer);
-      dotClickFocus(`.${leafClass(feature)}`);
+      dotClickFocus(feature.properties["MANAME"]);
   });
   layer.on("mouseover",function (e){
     layer.setStyle(gHighStyle);
@@ -167,43 +169,101 @@ var title = d3.select("#container")
               .html("<h2>How do the Wilderness Study Areas Compare?</h2>")
                 .attr("id", "title");
 
-var img = d3.select("#title")
-             .append()
-
 var compressor = function(str) {
     return str.replace(/ /g, "").replace("/", "");
 };
 
 var dotClickFocus = function (wsa) {
-  vizBox.selectAll("circle")
-                      .classed("strong focus", false)
-                      .attr("r", 5);
+/////////////////input from leaflet///////////////////
+if(typeof wsa == "string") {
 
-              vizBox.selectAll(wsa)
-                  .classed("strong focus", true)
-                  .attr("r", 10);
+  ///remove any already focused
+  vizBox.selectAll("circle")
+          .classed("strong focus", false)
+          .attr("r", 5);
+///add new focus
+  vizBox.selectAll(`.${leafClassy(wsa)}`)
+          .classed("strong focus", true)
+          .attr("r", 10);
+
+
+d3.selectAll(".focus").classed("hidden", true);
+
+//switch title
+d3.select("#title").html(`<h2>${wsa}</h2>`)
+
+
+//add focus labels
+for(var att of fakeAtt) {
+    var x = d3.select(`.${compressor(att)}`).select(`.${leafClassy(wsa)}`).attr("cx") - 20,
+        y = d3.select(`.${compressor(att)}`).select(`.${leafClassy(wsa)}`).attr("cy") - 30;
+
+    var toolTip = d3.select("#container")
+                  .append("div")
+                    .attr("class", "focus " + compressor(att))
+                    .attr("id", "toolTip")
+                    .style("left", x + "px")
+                    .style("top", y + "px");
+
+
+//get node data
+        var value = d3.select(`.${compressor(att)}`).select(`.${leafClassy(wsa)}`).data()[0][att];
+        console.log(value);
+          toolTip.text(value);
+
+
+}
+
+//input from d3
+} else {
+  ///remove any already focused
+  vizBox.selectAll("circle")
+          .classed("strong focus", false)
+          .attr("r", 5);
+///add new focus
+  vizBox.selectAll(`.${compressor(wsa["Area"])}`)
+          .classed("strong focus", true)
+          .attr("r", 10);
+
+d3.selectAll(".focus").classed("hidden", true);
+
+//switch title
+d3.select("#title").html(`<h2>${wsa["Area"]} Wilderness Study Area</h2>`)
+
+
+//add focus labels
+for(var att of fakeAtt) {
+    var x = d3.select(`.${compressor(att)}`).select(`.${compressor(wsa["Area"])}`).attr("cx") - 20,
+        y = d3.select(`.${compressor(att)}`).select(`.${compressor(wsa["Area"])}`).attr("cy") - 30;
+
+    var toolTip = d3.select("#container")
+                  .append("div")
+                    .attr("class", "focus " + compressor(att))
+                    .attr("id", "toolTip")
+                    .style("left", x + "px")
+                    .style("top", y + "px");
+
+    if(att == "Wildness") toolTip.text(wsa[att]);
+    else toolTip.text(wsa[att]);
+
+
+}
+}
 
 };
 
-
-
-
-
+//populate with fake data
+var fakeAtt = ["Wildness", "Light Pollution", "Noise Pollution", "Mammal", "Charismatic Carnivores"];
 
 //add wsa data
 d3.csv("data/wsa_data.csv", function (error, wsaData){
     if(error) throw error;
-  
-//populate with fake data
-    
-var fakeAtt = ["Wildness", "Light Pollution", "Noise Pollution", "Mammal", "Charismatic Carnivores"];
 
 for(var att of fakeAtt) {
     for(var wsa of wsaData) {
-        wsa[att] = Math.floor(Math.random()*100)*.01;
+        wsa[att] =Math.random().toFixed(2);
     }
 }
-
 console.log(wsaData);
 
 
@@ -236,7 +296,7 @@ var xAttScales = fakeAtt.map(function(att){
 /// create yScale
 var yScale = d3.scaleLinear()
                 .domain([0, (fakeAtt.length-1)])
-                .range([200, vizH - 10]);
+                .range([100, vizH - 30]);
 
 ///////////////////////create circles
 for(i=0;i<fakeAtt.length;i++) {
@@ -277,9 +337,8 @@ for(i=0;i<fakeAtt.length;i++) {
                   .classed("highlight", false);
 
           })
-          .on("click", function(d){
-
-              dotClickFocus(`.${compressor(d["Area"])}`);
+          .on("click", function(d) {
+              dotClickFocus(d);
               leafZoom(compressor(d["Area"]));
           });
 
@@ -290,10 +349,9 @@ for(i=0;i<fakeAtt.length;i++) {
                     .attr("class", "label")
                     .attr("x", `${vizW()/2}`)
                     .attr("y", function(d){
-                      return yScale(i)-15;
+                      return yScale(i)+25;
                     })
-                    .attr("text-anchor", "middle")
-                    .attr("text-decoration", "underline");
+                    .attr("text-anchor", "middle");
 
 } ////end for loop creating dots for each attribute
 
