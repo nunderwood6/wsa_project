@@ -166,12 +166,50 @@ var vizBox = d3.select("#vizBox")
 
 var title = d3.select("#container")
               .append("div")
-              .html("<h2>How do the Wilderness Study Areas Compare?</h2>")
+              .html("<h2>How do Wilderness Study Areas Compare?</h2>")
                 .attr("id", "title");
 
 var compressor = function(str) {
     return str.replace(/ /g, "").replace("/", "");
 };
+
+var dotHover = function(wsa) {
+
+      for(var att of fakeAtt) {
+          var x = d3.select(`.${compressor(att)}`).select(`.${compressor(wsa["Area"])}`).attr("cx") - 20,
+              y = d3.select(`.${compressor(att)}`).select(`.${compressor(wsa["Area"])}`).attr("cy") - 20;
+
+          var hoverTip = d3.select("#container")
+                        .append("div")
+                          .attr("class", "hover " + compressor(att))
+                          .attr("id", "hoverTip")
+                          .style("left", x + "px")
+                          .style("top", y + "px");
+
+          if(att == "Wildness") {
+
+              if(x>400) {
+                x= x-150;
+              }
+              if(x>300 && wsa["Area"].length > 15) {
+                x = x - 200;
+              }
+              hoverTip.style("left", x + "px")
+                      .style("top", y + "px")
+                  .text(wsa["Area"] +" "+ wsa[att]);
+          }
+          else {
+              hoverTip.text(wsa[att]);
+            }
+
+
+}
+}
+
+
+
+
+
 
 var dotClickFocus = function (wsa) {
 /////////////////input from leaflet///////////////////
@@ -196,7 +234,7 @@ d3.select("#title").html(`<h2>${wsa}</h2>`)
 //add focus labels
 for(var att of fakeAtt) {
     var x = d3.select(`.${compressor(att)}`).select(`.${leafClassy(wsa)}`).attr("cx") - 20,
-        y = d3.select(`.${compressor(att)}`).select(`.${leafClassy(wsa)}`).attr("cy") - 30;
+        y = d3.select(`.${compressor(att)}`).select(`.${leafClassy(wsa)}`).attr("cy") - 35;
 
     var toolTip = d3.select("#container")
                   .append("div")
@@ -234,7 +272,7 @@ d3.select("#title").html(`<h2>${wsa["Area"]} Wilderness Study Area</h2>`)
 //add focus labels
 for(var att of fakeAtt) {
     var x = d3.select(`.${compressor(att)}`).select(`.${compressor(wsa["Area"])}`).attr("cx") - 20,
-        y = d3.select(`.${compressor(att)}`).select(`.${compressor(wsa["Area"])}`).attr("cy") - 30;
+        y = d3.select(`.${compressor(att)}`).select(`.${compressor(wsa["Area"])}`).attr("cy") - 35;
 
     var toolTip = d3.select("#container")
                   .append("div")
@@ -243,8 +281,7 @@ for(var att of fakeAtt) {
                     .style("left", x + "px")
                     .style("top", y + "px");
 
-    if(att == "Wildness") toolTip.text(wsa[att]);
-    else toolTip.text(wsa[att]);
+        toolTip.text(wsa[att]);
 
 
 }
@@ -283,7 +320,7 @@ var xDom = function(att) {
 var xScaleGen = function(att) {
       return d3.scaleLinear()
                 .domain(xDom(att))
-                .range([20, vizW()-20]);
+                .range([20, vizW()-30]);
 } ;
 
 //xScale tests
@@ -296,7 +333,7 @@ var xAttScales = fakeAtt.map(function(att){
 /// create yScale
 var yScale = d3.scaleLinear()
                 .domain([0, (fakeAtt.length-1)])
-                .range([100, vizH - 30]);
+                .range([75, vizH - 30]);
 
 ///////////////////////create circles
 for(i=0;i<fakeAtt.length;i++) {
@@ -327,6 +364,7 @@ for(i=0;i<fakeAtt.length;i++) {
           .attr("r", 5)
           .on("mouseover", function(d){
 
+            dotHover(d);
             vizBox.selectAll(`.${compressor(d["Area"])}`)
               .classed("highlight", true);
 
@@ -335,6 +373,7 @@ for(i=0;i<fakeAtt.length;i++) {
 
             vizBox.selectAll(`.${compressor(d["Area"])}`)
                   .classed("highlight", false);
+                  d3.selectAll(".hover").remove();
 
           })
           .on("click", function(d) {

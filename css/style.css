@@ -98,8 +98,16 @@ div#title h2 {
 	margin: 0;
 }
 
+div#hoverTip {
+	position: absolute;
+	height: auto;
+	font-size: 12px;
+	color: #666;
+}
+
 div#toolTip {
 	position: absolute;
+	font-weight: 700;
 
 }
 
@@ -125,8 +133,7 @@ div#toolTip.focus.hidden {
 	font-size: 18px;
 }
 
-
-@media only screen and (min-width: 1000px) {
+@media only screen and (min-width: 1100px) {
 	#mapid {
 		display: inline-block;
 	}
@@ -137,7 +144,7 @@ div#toolTip.focus.hidden {
 }
 
 
-@media only screen and (max-width: 1000px) {
+@media only screen and (max-width: 1100px) {
 	#mapid {
 		margin: 0 auto;
 	}
@@ -152,5 +159,9 @@ div#toolTip.focus.hidden {
 	#mapid {
 		width: 80%;
 	}
+	#vizBox {
+		margin: 0 auto;
+	}
+
 }
 
