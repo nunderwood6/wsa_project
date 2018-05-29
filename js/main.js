@@ -17,25 +17,31 @@ L.tileLayer('https://{s}.tile.thunderforest.com/landscape/{z}/{x}/{y}.png?apikey
 	minZoom: 5
 }).addTo(myMap);
 
+var fsColor = "#50267c",
+    fsColorHigh = "#4411ff",
+    blmColor = "#b22010",
+    blmColorHigh = "#f48275";
+
+
 var dStyle = {
-    "color": "#50267c",
+    "color": fsColor,
     "weight": 1
   };
 var dHighStyle = {
-  "color": "#4411ff",
+  "color":fsColorHigh,
   "weight": 1,
   "opacity": 0.5,
   "fillOpacity:": 0.4
 };
 
 var gStyle = {
-    "color": "#b22010",
+    "color": blmColor,
     "weight": 1,
     "opacity": 0.5
 };
 
 var gHighStyle = {
-  "color": "#f48275",
+  "color": blmColorHigh,
   "weight": 1,
   "opacity": 0.5,
   "fillOpacity:": 0.4
@@ -141,10 +147,11 @@ onEachFeature: function(feature, layer){
 
 var vizW = function() {
     var win = $(window).width();
+    console.log(win);
 
-    if(win >= 1000) {
-      return (win - 700);
-    } else if( ((win < 1000) && (win > 650)) ) {
+    if(win >= 1025) {
+      return (win - 750);
+    } else if( ((win < 1025) && (win > 650)) ) {
       return 600;
     } else {
       return (win - 50);
@@ -173,6 +180,8 @@ var compressor = function(str) {
     return str.replace(/ /g, "").replace("/", "");
 };
 
+
+////////////////////event functions!!
 var dotHover = function(wsa) {
 
       for(var att of fakeAtt) {
@@ -187,7 +196,7 @@ var dotHover = function(wsa) {
                           .style("top", y + "px");
 
           if(att == "Wildness") {
-              if(x>300){
+              if(x>275){
                 y += 30;
 
               }
@@ -203,23 +212,37 @@ var dotHover = function(wsa) {
 }
 }
 
-
-
-
-
+//////////click event function
 
 var dotClickFocus = function (wsa) {
+
+
 /////////////////input from leaflet///////////////////
 if(typeof wsa == "string") {
 
+var value = d3.select(`.${compressor(att)}`).select(`.${leafClassy(wsa)}`).data()[0];
+console.log(value);
+
+
   ///remove any already focused
   vizBox.selectAll("circle")
-          .classed("strong focus", false)
-          .attr("r", 5);
+          .attr("r", 5)
+          .attr("opacity", ".5")
+          .attr("fill", "#999");
+
 ///add new focus
   vizBox.selectAll(`.${leafClassy(wsa)}`)
-          .classed("strong focus", true)
-          .attr("r", 10);
+          .attr("r", 10)
+          .attr("opacity", ".8")
+          .attr("fill", function(wsa){
+              if(wsa["Manager"] == "Forest Service") {
+                      console.log("yo");
+                      return fsColor;
+                  }
+                  else {
+                      return blmColor;
+                  }
+          });
 
 
 d3.selectAll(".focus").classed("hidden", true);
@@ -240,25 +263,32 @@ for(var att of fakeAtt) {
                     .style("left", x + "px")
                     .style("top", y + "px");
 
-
-//get node data
-        var value = d3.select(`.${compressor(att)}`).select(`.${leafClassy(wsa)}`).data()[0][att];
-        console.log(value);
-          toolTip.text(value);
+var toolText = toolTip.text(value[att]);
 
 
 }
 
-//input from d3
+/////////////////////////////////////////////input from d3//////////////////////////
 } else {
   ///remove any already focused
-  vizBox.selectAll("circle")
-          .classed("strong focus", false)
-          .attr("r", 5);
+ vizBox.selectAll("circle")
+        .attr("r", 5)
+        .attr("opacity", ".5")
+        .attr("fill", "#999");
+          
 ///add new focus
-  vizBox.selectAll(`.${compressor(wsa["Area"])}`)
-          .classed("strong focus", true)
-          .attr("r", 10);
+   vizBox.selectAll(`.${compressor(wsa["Area"])}`)
+          .attr("r", 10)
+          .attr("opacity", ".8")
+          .attr("fill", function(wsa){
+              if(wsa["Manager"] == "Forest Service") {
+                      console.log("yo");
+                      return fsColor;
+                  }
+                  else {
+                      return blmColor;
+                  }
+          });
 
 d3.selectAll(".focus").classed("hidden", true);
 
@@ -317,7 +347,7 @@ var xDom = function(att) {
 var xScaleGen = function(att) {
       return d3.scaleLinear()
                 .domain(xDom(att))
-                .range([10, vizW()-30]);
+                .range([10, vizW()-10]);
 } ;
 
 //xScale tests
@@ -359,17 +389,27 @@ for(i=0;i<fakeAtt.length;i++) {
             return yScale(i);
           })
           .attr("r", 5)
+          .attr("fill", "#999")
+          .attr("opacity", ".5")
           .on("mouseover", function(d){
 
             dotHover(d);
             vizBox.selectAll(`.${compressor(d["Area"])}`)
-              .classed("highlight", true);
-
+                            .attr("stroke", function(d){
+                  if(d["Manager"] == "Forest Service") {
+                      return fsColor;
+                  }
+                  else {
+                      return blmColor;
+                  }
+                            });
+            dotHover(d);
+            
           })
           .on("mouseout", function(d){
 
             vizBox.selectAll(`.${compressor(d["Area"])}`)
-                  .classed("highlight", false);
+                  .attr("stroke", "none");
                   d3.selectAll(".hover").remove();
 
           })

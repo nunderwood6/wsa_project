@@ -1,5 +1,6 @@
 body {
 	font-family: 'Lato';
+	margin: 0;
 }
 
 p {
@@ -11,6 +12,10 @@ p {
 h3 {
 	font-family: 'Lato';
 }
+
+
+/* INTRO SECTION STYLES */
+
 
 #intro {
 		margin: 0 auto 20px auto;
@@ -43,6 +48,11 @@ h3 {
 }
 
 
+
+/* Leaflet Map Styles */
+
+
+
 #mapid {
 	width: 600px;
 	height: 400px;
@@ -72,10 +82,7 @@ h3 {
 
 
 
-.circles {
-	fill: #999;
-	opacity: .5;
-}
+/* DotPlot Styles */
 
 div#container {
 	position: relative;
@@ -115,25 +122,11 @@ div#toolTip.focus.hidden {
 	display: none;
 }
 
-.baller {
-	color: #fff !important; 
-}
-
-.circles.highlight {
-	opacity: 1;
-	fill: #666;
-	stroke: #111;
-}
-
-.circles.strong.focus {
-	fill: #683aa5;
-}
-
 .label {
 	font-size: 18px;
 }
 
-@media only screen and (min-width: 1100px) {
+@media only screen and (min-width: 1025px) {
 	#mapid {
 		display: inline-block;
 	}
@@ -144,9 +137,9 @@ div#toolTip.focus.hidden {
 }
 
 
-@media only screen and (max-width: 1100px) {
+@media only screen and (max-width: 1025px) {
 	#mapid {
-		margin: 0 auto;
+		margin:  auto;
 	}
 
 	#vizBox {
@@ -159,7 +152,7 @@ div#toolTip.focus.hidden {
 	#mapid {
 		width: 80%;
 	}
-	#vizBox {
+	div#vizBox {
 		margin: 0 auto;
 	}
 
