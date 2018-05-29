@@ -176,7 +176,7 @@ var compressor = function(str) {
 var dotHover = function(wsa) {
 
       for(var att of fakeAtt) {
-          var x = d3.select(`.${compressor(att)}`).select(`.${compressor(wsa["Area"])}`).attr("cx") - 20,
+          var x = d3.select(`.${compressor(att)}`).select(`.${compressor(wsa["Area"])}`).attr("cx") - 15,
               y = d3.select(`.${compressor(att)}`).select(`.${compressor(wsa["Area"])}`).attr("cy") - 20;
 
           var hoverTip = d3.select("#container")
@@ -187,16 +187,13 @@ var dotHover = function(wsa) {
                           .style("top", y + "px");
 
           if(att == "Wildness") {
+              if(x>300){
+                y += 30;
 
-              if(x>400) {
-                x= x-150;
-              }
-              if(x>300 && wsa["Area"].length > 15) {
-                x = x - 200;
               }
               hoverTip.style("left", x + "px")
                       .style("top", y + "px")
-                  .text(wsa["Area"] +" "+ wsa[att]);
+                  .text(wsa["Area"] +"\n"+ wsa[att]);
           }
           else {
               hoverTip.text(wsa[att]);
@@ -320,7 +317,7 @@ var xDom = function(att) {
 var xScaleGen = function(att) {
       return d3.scaleLinear()
                 .domain(xDom(att))
-                .range([20, vizW()-30]);
+                .range([10, vizW()-30]);
 } ;
 
 //xScale tests
