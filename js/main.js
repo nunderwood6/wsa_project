@@ -41,14 +41,20 @@ var gHighStyle = {
   "fillOpacity:": 0.4
 };
 
-
 ////////hacky solution to get latlong bounds for d3 event
-var boundsKey = {};
+var layerKey = {};
 
 var leafZoom = function(key) {
   console.log(key);
-  myMap.fitBounds(boundsKey[key], {maxZoom: 9});
-  
+  var layer = layerKey[key][0],
+      feature = layerKey[key][1];
+
+
+  myMap.fitBounds(layer.getBounds(), {maxZoom: 9});
+
+  layer.bindPopup("<h3>" + feature.properties["SourceName"] + 
+    "</h3><p>" + d3.format(',')(Math.floor(feature.properties["ACRES"])) + 
+    " Acres, " + feature.properties["MANAGER"] + "</p>").openPopup();
   };
 
 ///format wsa names to match d3 data
@@ -63,7 +69,7 @@ var onClick = function(e, layer) {
   console.log(layer);
 };
 
-console.log(boundsKey);
+console.log(layerKey);
 /////////////add Daines WSA's
 $.getJSON('data/daines.geojson', function(data){
 
@@ -74,7 +80,7 @@ $.getJSON('data/daines.geojson', function(data){
 onEachFeature: function(feature, layer){
 
   ///store bounds in map for access by d3 listener
-  boundsKey[leafClass(feature)] = layer.getBounds();
+  layerKey[leafClass(feature)] = [layer, feature];
 
   //set layer style
 
@@ -109,7 +115,7 @@ $.getJSON('data/gforte.geojson', function(data){
     style: gStyle,
 
 onEachFeature: function(feature, layer){
-  boundsKey[leafClass(feature)] = layer.getBounds();
+  layerKey[leafClass(feature)] = [layer, feature];
   layer.bindPopup("<h3>" + feature.properties["SourceName"] + 
   	"</h3><p>" + d3.format(',')(Math.floor(feature.properties["ACRES"])) + " Acres, Bureau of Land Management</p>");
   layer.on("click", function(e){
