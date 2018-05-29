@@ -71,9 +71,36 @@ h3 {
 }
 
 
+
 .circles {
 	fill: #999;
 	opacity: .5;
+}
+
+div#container {
+	position: relative;
+	width: 100%;
+	height: 100%;
+}
+
+div#title {
+		position: absolute;
+		left: 5px;
+		top: 5px;
+		width: 300px;
+		font-weight: normal;
+		line-height: 1;
+		font-size: 16px;
+		font-family: 'Playfair Display', serif;
+}
+
+div#title h2 {
+	margin: 0;
+}
+
+
+.baller {
+	color: #fff !important; 
 }
 
 .circles.highlight {
@@ -85,6 +112,11 @@ h3 {
 .circles.strong.focus {
 	fill: #683aa5;
 }
+
+.label {
+	text-decoration: underline;
+}
+
 
 @media only screen and (min-width: 1000px) {
 	#mapid {

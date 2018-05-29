@@ -57,9 +57,10 @@ var leafClass = function(feat) {
 };
 
 ///click function handler for leaflet
-var onClick = function(e) {
+var onClick = function(e, layer) {
   myMap.fitBounds(e.target.getBounds(), {maxZoom: 9});
-
+  layer.setStyle({weight: 5});
+  console.log(layer);
 };
 
 console.log(boundsKey);
@@ -76,7 +77,6 @@ onEachFeature: function(feature, layer){
   boundsKey[leafClass(feature)] = layer.getBounds();
 
   //set layer style
-  layer.setStyle({"className": leafClass(feature)});
 
   ///add basic Leaflet popup
   layer.bindPopup("<h3>" + feature.properties["SourceName"] + 
@@ -84,7 +84,7 @@ onEachFeature: function(feature, layer){
     " Acres, " + feature.properties["MANAGER"] + "</p>");
 
   layer.on("click", function(e){
-      onClick(e);
+      onClick(e, layer);
       dotClickFocus(leafClass(feature));
   });
 
@@ -110,13 +110,11 @@ $.getJSON('data/gforte.geojson', function(data){
 
 onEachFeature: function(feature, layer){
   boundsKey[leafClass(feature)] = layer.getBounds();
-  layer.setStyle({"className": leafClass(feature)});
   layer.bindPopup("<h3>" + feature.properties["SourceName"] + 
   	"</h3><p>" + d3.format(',')(Math.floor(feature.properties["ACRES"])) + " Acres, Bureau of Land Management</p>");
   layer.on("click", function(e){
-      onClick(e);
+      onClick(e, layer);
       dotClickFocus(`.${leafClass(feature)}`);
-      console.log(leafClass(feature));
   });
   layer.on("mouseover",function (e){
     layer.setStyle(gHighStyle);
@@ -147,15 +145,24 @@ var vizW = function() {
 
 var vizH = 400;
 
-
 var vizBox = d3.select("#vizBox")
                   .style("width", `${vizW()}px`)
                   .style("height", vizH)
+                  .append("div")
+                    .attr("id", "container")
                   .append("svg")
                     .attr("class", "vizSvg")
                     .attr("width", vizW())
                     .attr("height", vizH);
                     
+
+var title = d3.select("#container")
+              .append("div")
+              .html("<h2>How do the Wilderness Study Areas Compare?</h2>")
+                .attr("id", "title");
+
+var img = d3.select("#title")
+             .append()
 
 var compressor = function(str) {
     return str.replace(/ /g, "").replace("/", "");
@@ -169,7 +176,12 @@ var dotClickFocus = function (wsa) {
               vizBox.selectAll(wsa)
                   .classed("strong focus", true)
                   .attr("r", 10);
+
 };
+
+
+
+
 
 
 //add wsa data
@@ -218,9 +230,9 @@ var xAttScales = fakeAtt.map(function(att){
 /// create yScale
 var yScale = d3.scaleLinear()
                 .domain([0, (fakeAtt.length-1)])
-                .range([30, vizH - 10]);
+                .range([200, vizH - 10]);
 
-///create circles
+///////////////////////create circles
 for(i=0;i<fakeAtt.length;i++) {
 
     var att = fakeAtt[i];
@@ -230,19 +242,15 @@ for(i=0;i<fakeAtt.length;i++) {
         return b[att] - a[att];
     });
 
-    vizBox.append("text")
-          .attr("class", `label ${att}`)
-          .attr()
-
-
-    vizBox.append("g")
-      .attr("class", att)
-        .selectAll(att)
+////draw dots
+       vizBox.append("g")
+          .attr("class", compressor(att))
+        .selectAll("circle")
         .data(sorted)
         .enter()
         .append("circle")
           .attr("class", function(d) {
-            return att + " circles " + compressor(d["Area"]);
+            return "circles " + compressor(d["Area"]);
             })
           .attr("cx", function(d) {
             return xAttScales[i](d[att]);
@@ -252,13 +260,16 @@ for(i=0;i<fakeAtt.length;i++) {
           })
           .attr("r", 5)
           .on("mouseover", function(d){
+
             vizBox.selectAll(`.${compressor(d["Area"])}`)
               .classed("highlight", true);
 
           })
           .on("mouseout", function(d){
+
             vizBox.selectAll(`.${compressor(d["Area"])}`)
                   .classed("highlight", false);
+
           })
           .on("click", function(d){
 
@@ -266,8 +277,21 @@ for(i=0;i<fakeAtt.length;i++) {
               leafZoom(compressor(d["Area"]));
           });
 
+///add Labels
+    vizBox.select(`.${compressor(att)}`)
+                .append("text")
+                .text(att)
+                    .attr("class", "label")
+                    .attr("x", `${vizW()/2}`)
+                    .attr("y", function(d){
+                      return yScale(i)-15;
+                    })
+                    .attr("text-anchor", "middle")
+                    .attr("text-decoration", "underline");
 
 } ////end for loop creating dots for each attribute
+
+
 
 
 }); ///end d3 callback function
