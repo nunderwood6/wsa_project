@@ -55,7 +55,7 @@ h3 {
 
 #mapid {
 	width: 600px;
-	height: 400px;
+	height: 450px;
 	margin: 0px 20px;
 }
 
@@ -124,6 +124,18 @@ div#toolTip.focus.hidden {
 
 .label {
 	font-size: 18px;
+}
+
+div#line {
+	position: absolute;
+	width: 100%;
+    height: 1px;
+    border-bottom: 1px solid #E8E8E8;
+}
+
+div#medianPark {
+	position: absolute;
+    border-left: 2px solid #555;
 }
 
 @media only screen and (min-width: 1025px) {

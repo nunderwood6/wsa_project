@@ -74,7 +74,6 @@ var leafClassy = function(feat) {
 ///click function handler for leaflet
 var onClick = function(e, layer) {
   myMap.fitBounds(e.target.getBounds(), {maxZoom: 9});
-  layer.setStyle({weight: 5});
 };
 
 
@@ -99,6 +98,7 @@ onEachFeature: function(feature, layer){
 
   layer.on("click", function(e){
       onClick(e, layer);
+      console.log(feature.properties["MANAME"]);
       dotClickFocus(feature.properties["MANAME"]);
   });
 
@@ -147,10 +147,8 @@ onEachFeature: function(feature, layer){
 
 var vizW = function() {
     var win = $(window).width();
-    console.log(win);
-
     if(win >= 1025) {
-      return (win - 750);
+      return (win - 675);
     } else if( ((win < 1025) && (win > 650)) ) {
       return 600;
     } else {
@@ -158,7 +156,7 @@ var vizW = function() {
     }
 };
 
-var vizH = 400;
+var vizH = 450;
 
 var vizBox = d3.select("#vizBox")
                   .style("width", `${vizW()}px`)
@@ -220,23 +218,23 @@ var dotClickFocus = function (wsa) {
 /////////////////input from leaflet///////////////////
 if(typeof wsa == "string") {
 
-var value = d3.select(`.${compressor(att)}`).select(`.${leafClassy(wsa)}`).data()[0];
+var value = d3.select(`.${compressor(wsa)}`).select(`.${leafClassy(wsa)}`).data()[0];
 console.log(value);
-
 
   ///remove any already focused
   vizBox.selectAll("circle")
+          .classed("strongFocus", false)
           .attr("r", 5)
           .attr("opacity", ".5")
-          .attr("fill", "#999");
+          .attr("fill", "#bbb");
 
 ///add new focus
   vizBox.selectAll(`.${leafClassy(wsa)}`)
+          .classed("strongFocus", true)
           .attr("r", 10)
           .attr("opacity", ".8")
           .attr("fill", function(wsa){
               if(wsa["Manager"] == "Forest Service") {
-                      console.log("yo");
                       return fsColor;
                   }
                   else {
@@ -263,26 +261,32 @@ for(var att of fakeAtt) {
                     .style("left", x + "px")
                     .style("top", y + "px");
 
+
+var value = d3.select(`.${compressor(att)}`).select(`.${leafClassy(wsa)}`).data()[0];
 var toolText = toolTip.text(value[att]);
 
 
 }
 
-/////////////////////////////////////////////input from d3//////////////////////////
+
+
+
+/////////////////input from d3//////////////////////////
 } else {
   ///remove any already focused
  vizBox.selectAll("circle")
+        .classed("strongFocus", false)
         .attr("r", 5)
         .attr("opacity", ".5")
-        .attr("fill", "#999");
+        .attr("fill", "#bbb");
           
 ///add new focus
    vizBox.selectAll(`.${compressor(wsa["Area"])}`)
+          .classed("strongFocus", true)
           .attr("r", 10)
           .attr("opacity", ".8")
           .attr("fill", function(wsa){
               if(wsa["Manager"] == "Forest Service") {
-                      console.log("yo");
                       return fsColor;
                   }
                   else {
@@ -316,19 +320,38 @@ for(var att of fakeAtt) {
 
 };
 
+
 //populate with fake data
 var fakeAtt = ["Wildness", "Light Pollution", "Noise Pollution", "Mammal", "Charismatic Carnivores"];
+//////////////////////////add wsa data////////////////////////////////
 
-//add wsa data
-d3.csv("data/wsa_data.csv", function (error, wsaData){
+d3.csv("data/wsa_data.csv", function (error, wsaParksData){
     if(error) throw error;
 
+
 for(var att of fakeAtt) {
-    for(var wsa of wsaData) {
+    for(var wsa of wsaParksData) {
         wsa[att] =Math.random().toFixed(2);
     }
 }
-console.log(wsaData);
+
+///////////////////separate wsa and park data//////////////////////
+var wsaData = wsaParksData.filter(unit => !unit["Area"].includes("Park"));
+var parksData = wsaParksData.filter(unit => unit["Area"].includes("Park"));
+
+//////////calculate averages for park data
+var parksAvg = {};
+for(var att of fakeAtt){
+    var sum = 0;
+    for(var park of parksData){
+        sum += parseFloat(park[att]);
+    }
+    var avg = (sum/parksData.length).toFixed(2);
+    parksAvg[att] = avg;
+}
+
+
+console.log(parksAvg);
 
 
 
@@ -360,7 +383,7 @@ var xAttScales = fakeAtt.map(function(att){
 /// create yScale
 var yScale = d3.scaleLinear()
                 .domain([0, (fakeAtt.length-1)])
-                .range([75, vizH - 30]);
+                .range([150, vizH - 30]);
 
 ///////////////////////create circles
 for(i=0;i<fakeAtt.length;i++) {
@@ -386,10 +409,10 @@ for(i=0;i<fakeAtt.length;i++) {
             return xAttScales[i](d[att]);
           })
           .attr("cy", function(d){
-            return yScale(i);
+            return yScale(i)-5;
           })
           .attr("r", 5)
-          .attr("fill", "#999")
+          .attr("fill", "#bbb")
           .attr("opacity", ".5")
           .on("mouseover", function(d){
 
@@ -428,6 +451,26 @@ for(i=0;i<fakeAtt.length;i++) {
                       return yScale(i)+25;
                     })
                     .attr("text-anchor", "middle");
+
+////////add lines
+    d3.select("#container")
+              .append("div")
+              .attr("id", "line")
+                  .style("top", `${yScale(i)+5}px`);
+
+ ///////////add median park values
+    d3.select("#container")
+              .append("div")
+              .attr("id", "medianPark")
+                  .style("width", "2px")
+                  .style("height", "10px")
+                  .style("top", `${yScale(i)}px`)
+                  .style("left", function(d){
+                    return `${xAttScales[i](parksAvg[att])}px`;
+                  });
+
+console.log(xAttScales[i](.32));
+console.log(parksAvg[att]);
 
 } ////end for loop creating dots for each attribute
 
