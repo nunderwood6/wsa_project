@@ -1,18 +1,27 @@
 function wrapper(){
 
-//initialize map
+//initialize Leaflet map
 
 var topLeft = [49.052589, -116.223559],
     botRight = [44.895140, -103.927112];
 
 var myMap = L.map('mapid').fitBounds([topLeft, botRight]);
 
+/*'https://{s}.tile.thunderforest.com/landscape/{z}/{x}/{y}.png?apikey=d0f7c9187bfe46659b71bb1f9ea9838b',
+{
+  attribution: '&copy; <a href="http://www.thunderforest.com/">Thunderforest</a>, &copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  apikey: 'd0f7c9187bfe46659b71bb1f9ea9838b',
+  maxZoom: 14,
+  minZoom: 5
+}
+*/
+
+
 
 //add tiles
-L.tileLayer('https://{s}.tile.thunderforest.com/landscape/{z}/{x}/{y}.png?apikey=d0f7c9187bfe46659b71bb1f9ea9838b', 
-{
-	attribution: '&copy; <a href="http://www.thunderforest.com/">Thunderforest</a>, &copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-	apikey: 'd0f7c9187bfe46659b71bb1f9ea9838b',
+L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png', {
+  attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="http://cartodb.com/attributions">CartoDB</a>',
+  subdomains: 'abcd',
 	maxZoom: 14,
 	minZoom: 5
 }).addTo(myMap);
@@ -156,7 +165,7 @@ var vizW = function() {
     }
 };
 
-var vizH = 450;
+var vizH = 450; 
 
 var vizBox = d3.select("#vizBox")
                   .style("width", `${vizW()}px`)
@@ -169,22 +178,33 @@ var vizBox = d3.select("#vizBox")
                     .attr("height", vizH);
                     
 
+var photo = d3.select("#container")
+              .append("div")
+                .attr("id", "photo")
+                .html(`<img src="img/TerryBadlands.jpg">`)
+                .style("width", "50%")
+                .style("height", "250px");
+
 var title = d3.select("#container")
               .append("div")
               .html("<h2>How do Wilderness Study Areas Compare?</h2>")
                 .attr("id", "title");
 
 var compressor = function(str) {
-    return str.replace(/ /g, "").replace("/", "");
+    return str.replace(/ /g, "").replace("/", "").replace("BLM WSA", "").replace("FS WSA", "");
 };
 
 
-////////////////////event functions!!
+////////////////////event functions//////////////////////////////////////////
 var dotHover = function(wsa) {
 
-      for(var att of fakeAtt) {
+
+
+      for(var att of attributes) {
           var x = d3.select(`.${compressor(att)}`).select(`.${compressor(wsa["Area"])}`).attr("cx") - 15,
               y = d3.select(`.${compressor(att)}`).select(`.${compressor(wsa["Area"])}`).attr("cy") - 20;
+
+
 
           var hoverTip = d3.select("#container")
                         .append("div")
@@ -194,16 +214,16 @@ var dotHover = function(wsa) {
                           .style("top", y + "px");
 
           if(att == "Wildness") {
-              if(x>275){
-                y += 30;
+              if(x> vizW()/2+30){
+                y += 35;
 
               }
               hoverTip.style("left", x + "px")
                       .style("top", y + "px")
-                  .text(wsa["Area"] +"\n"+ wsa[att]);
+                  .text(wsa["Area"] +"\n"+ parseFloat(wsa[att]).toFixed(2));
           }
           else {
-              hoverTip.text(wsa[att]);
+              hoverTip.text(parseFloat(wsa[att]).toFixed(2));
             }
 
 
@@ -218,7 +238,7 @@ var dotClickFocus = function (wsa) {
 /////////////////input from leaflet///////////////////
 if(typeof wsa == "string") {
 
-var value = d3.select(`.${compressor(wsa)}`).select(`.${leafClassy(wsa)}`).data()[0];
+var value = d3.select(`.${leafClassy(wsa)}`).data()[0];
 console.log(value);
 
   ///remove any already focused
@@ -233,8 +253,8 @@ console.log(value);
           .classed("strongFocus", true)
           .attr("r", 10)
           .attr("opacity", ".8")
-          .attr("fill", function(wsa){
-              if(wsa["Manager"] == "Forest Service") {
+          .attr("fill", function(d){
+              if(value["Class"] == "FS_WSA") {
                       return fsColor;
                   }
                   else {
@@ -246,11 +266,11 @@ console.log(value);
 d3.selectAll(".focus").classed("hidden", true);
 
 //switch title
-d3.select("#title").html(`<h2>${wsa}</h2>`)
+d3.select("#title").html(`<h2>${wsa}</h2>`);
 
 
 //add focus labels
-for(var att of fakeAtt) {
+for(var att of attributes) {
     var x = d3.select(`.${compressor(att)}`).select(`.${leafClassy(wsa)}`).attr("cx") - 20,
         y = d3.select(`.${compressor(att)}`).select(`.${leafClassy(wsa)}`).attr("cy") - 35;
 
@@ -263,13 +283,20 @@ for(var att of fakeAtt) {
 
 
 var value = d3.select(`.${compressor(att)}`).select(`.${leafClassy(wsa)}`).data()[0];
-var toolText = toolTip.text(value[att]);
+var toolText = toolTip.text(parseFloat(value[att]).toFixed(2));
 
 
 }
 
+///remove photo and add selected
+d3.select("#photo").html(`<img src="img/${leafClassy(wsa)}.jpg">`);
 
-
+//switch title
+d3.select("#title").html(`<h2>${wsa}</h2>
+  <p>Wilder than ${value["WildnessAvg"]}% of National Parks</p>
+  <p>Darker than ${value["Light PollutionAvg"]}% of National Parks</p>
+  <p>Quieter than ${value["Noise PollutionAvg"]}% of National Parks</p>
+  `);
 
 /////////////////input from d3//////////////////////////
 } else {
@@ -280,13 +307,15 @@ var toolText = toolTip.text(value[att]);
         .attr("opacity", ".5")
         .attr("fill", "#bbb");
           
+
+
 ///add new focus
    vizBox.selectAll(`.${compressor(wsa["Area"])}`)
           .classed("strongFocus", true)
           .attr("r", 10)
           .attr("opacity", ".8")
           .attr("fill", function(wsa){
-              if(wsa["Manager"] == "Forest Service") {
+              if(wsa["Class"] == "FS_WSA") {
                       return fsColor;
                   }
                   else {
@@ -296,12 +325,9 @@ var toolText = toolTip.text(value[att]);
 
 d3.selectAll(".focus").classed("hidden", true);
 
-//switch title
-d3.select("#title").html(`<h2>${wsa["Area"]} Wilderness Study Area</h2>`)
-
 
 //add focus labels
-for(var att of fakeAtt) {
+for(var att of attributes) {
     var x = d3.select(`.${compressor(att)}`).select(`.${compressor(wsa["Area"])}`).attr("cx") - 20,
         y = d3.select(`.${compressor(att)}`).select(`.${compressor(wsa["Area"])}`).attr("cy") - 35;
 
@@ -312,48 +338,100 @@ for(var att of fakeAtt) {
                     .style("left", x + "px")
                     .style("top", y + "px");
 
-        toolTip.text(wsa[att]);
+        toolTip.text(parseFloat(wsa[att]).toFixed(2));
 
 
 }
+
+///remove photo and add selected
+d3.select("#photo").html(`<img src="img/${compressor(wsa["Area"])}.jpg">`);
+
+//switch title
+d3.select("#title").html(`<h2>${wsa["Area"]} Wilderness Study Area</h2>
+  <p>Wilder than ${wsa["WildnessAvg"]}% of National Parks</p>
+  <p>Darker than ${wsa["Light PollutionAvg"]}% of National Parks</p>
+  <p>Quieter than ${wsa["Noise PollutionAvg"]}% of National Parks</p>
+  `);
 }
+
 
 };
 
 
-//populate with fake data
-var fakeAtt = ["Wildness", "Light Pollution", "Noise Pollution", "Mammal", "Charismatic Carnivores"];
+//list of expressed attributes
+var attributes = ["Wildness", "Light Pollution", "Noise Pollution"];
 //////////////////////////add wsa data////////////////////////////////
 
-d3.csv("data/wsa_data.csv", function (error, wsaParksData){
+d3.csv("data/wsa.csv", function (error, wsaParksData){
     if(error) throw error;
 
 
-for(var att of fakeAtt) {
-    for(var wsa of wsaParksData) {
-        wsa[att] =Math.random().toFixed(2);
-    }
-}
 
 ///////////////////separate wsa and park data//////////////////////
-var wsaData = wsaParksData.filter(unit => !unit["Area"].includes("Park"));
-var parksData = wsaParksData.filter(unit => unit["Area"].includes("Park"));
+var wsaData = wsaParksData.filter(unit => !unit["Class"].includes("Park"));
 
-//////////calculate averages for park data
-var parksAvg = {};
-for(var att of fakeAtt){
-    var sum = 0;
-    for(var park of parksData){
-        sum += parseFloat(park[att]);
-    }
-    var avg = (sum/parksData.length).toFixed(2);
-    parksAvg[att] = avg;
+for(var wsa of wsaData) {
+    wsa["Area"] = wsa["Area"].replace(" BLM WSA", "").replace(" FS WSA", "");
 }
 
+var parksData = wsaParksData.filter(unit => unit["Class"].includes("Park"))
+                            .filter(unit => unit["Light Pollution"] != "NA")
+                            .filter(unit => unit["Area"] != "Isle Royale National Park");
 
+
+
+//////////calculate averages for park data///////////
+var parksAvg = {};
+for(var att of attributes){
+
+    var sorted = parksData.sort(function(a,b) {
+        return a[att] - b[att];
+    });
+
+
+////calculate percentile of wsa compared to parks
+for(var wsa of wsaData) {
+
+///store name
+    var key = wsa["Area"];
+    var keyFinder = function(zone){
+      return zone["Area"] == key ;
+    };
+///add to parks
+    sorted.push(wsa);
+
+//resort with wsa added
+    sorted.sort(function(a,b){
+      return a[att] - b[att];
+    });
+
+//find index of wsa
+    var index = sorted.findIndex(keyFinder);
+  
+//remove wsa from parks
+    sorted.splice(index, 1);
+
+//add avg as att to wsaData
+    wsa[att+"Avg"] =((index-1)/sorted.length*100).toFixed();
+}
+
+    var findMedian = function(arr) {
+      if(arr.length%2 != 0) {
+        return arr[Math.ceil(arr.length/2)][att];
+      }
+      else {
+        return ( parseFloat(arr[(arr.length/2)][att]) + parseFloat(arr[arr.length/2 + 1][att])) / 2;
+      }
+    };
+
+
+    parksAvg[att] = findMedian(sorted);
+
+}
+
+console.log(wsaData);
+console.log(parksData);
 console.log(parksAvg);
-
-
 
 ///dynamic attribute domain finder
 
@@ -362,6 +440,7 @@ var xDom = function(att) {
     for(var wsa of wsaData) {
         attArray.push(wsa[att]);
     }
+    attArray.push(parksAvg[att]);
     return d3.extent(attArray);
 
 };
@@ -374,21 +453,21 @@ var xScaleGen = function(att) {
 } ;
 
 //xScale tests
-var wildScale = xScaleGen(fakeAtt[0]);
+var wildScale = xScaleGen(attributes[0]);
 
-var xAttScales = fakeAtt.map(function(att){
+var xAttScales = attributes.map(function(att){
       return xScaleGen(att);
 });
 
 /// create yScale
 var yScale = d3.scaleLinear()
-                .domain([0, (fakeAtt.length-1)])
-                .range([150, vizH - 30]);
+                .domain([0, (attributes.length-1)])
+                .range([275, vizH - 30]);
 
 ///////////////////////create circles
-for(i=0;i<fakeAtt.length;i++) {
+for(i=0;i<attributes.length;i++) {
 
-    var att = fakeAtt[i];
+    var att = attributes[i];
 
 //sort data so drawing order is right to left
     var sorted = wsaData.sort(function(a,b) {
@@ -396,61 +475,76 @@ for(i=0;i<fakeAtt.length;i++) {
     });
 
 ////draw dots
-       vizBox.append("g")
-          .attr("class", compressor(att))
-        .selectAll("circle")
-        .data(sorted)
-        .enter()
-        .append("circle")
-          .attr("class", function(d) {
-            return "circles " + compressor(d["Area"]);
-            })
-          .attr("cx", function(d) {
-            return xAttScales[i](d[att]);
-          })
-          .attr("cy", function(d){
-            return yScale(i)-5;
-          })
-          .attr("r", 5)
-          .attr("fill", "#bbb")
-          .attr("opacity", ".5")
-          .on("mouseover", function(d){
+vizBox.append("g")
+  .attr("class", compressor(att))
+.selectAll("circle")
+.data(sorted)
+.enter()
+.append("circle")
+  .attr("class", function(d) {
+    return "circles " + compressor(d["Area"]);
+    })
+  .attr("cx", function(d) {
+    return xAttScales[i](d[att]);
+  })
+  .attr("cy", function(d){
+    return yScale(i)-5;
+  })
+  .attr("r", 5)
+  .attr("fill", "#bbb")
+  .attr("opacity", ".5")
+  .on("mouseover", function(d){
 
-            dotHover(d);
-            vizBox.selectAll(`.${compressor(d["Area"])}`)
-                            .attr("stroke", function(d){
-                  if(d["Manager"] == "Forest Service") {
-                      return fsColor;
-                  }
-                  else {
-                      return blmColor;
-                  }
-                            });
-            dotHover(d);
-            
-          })
-          .on("mouseout", function(d){
+    if($(this).hasClass("strongFocus")) {}
 
-            vizBox.selectAll(`.${compressor(d["Area"])}`)
-                  .attr("stroke", "none");
-                  d3.selectAll(".hover").remove();
+    else {dotHover(d);
+                vizBox.selectAll(`.${compressor(d["Area"])}`)
+                                .attr("stroke", function(d){
+                      if(d["Class"] == "FS_WSA") {
+                          return fsColor;
+                      }
+                      else {
+                          return blmColor;
+                      }
+                                })
+                                .attr("stroke-width", "2px");}
+                
+  })
+  .on("mouseout", function(d){
 
-          })
-          .on("click", function(d) {
-              dotClickFocus(d);
-              leafZoom(compressor(d["Area"]));
-          });
+    vizBox.selectAll(`.${compressor(d["Area"])}`)
+          .attr("stroke", "none");
+          d3.selectAll(".hover").remove();
+
+  })
+  .on("click", function(d) {
+      dotClickFocus(d);
+      leafZoom(compressor(d["Area"]));
+  });
+
+
+
 
 ///add Labels
-    vizBox.select(`.${compressor(att)}`)
-                .append("text")
-                .text(att)
-                    .attr("class", "label")
-                    .attr("x", `${vizW()/2}`)
-                    .attr("y", function(d){
-                      return yScale(i)+25;
-                    })
-                    .attr("text-anchor", "middle");
+  vizBox.select(`.${compressor(att)}`)
+          .append("text")
+          .text(function(d){
+              if(att == "Light Pollution") {
+                return "Darkness";
+              }
+              else if(att == "Noise Pollution") {
+                return "Quietness";
+              }
+              else {
+                return att;
+              }
+          })
+              .attr("class", "label")
+              .attr("x", `${vizW()/2}`)
+              .attr("y", function(d){
+                return yScale(i)+25;
+              })
+              .attr("text-anchor", "middle");
 
 ////////add lines
     d3.select("#container")
@@ -469,8 +563,7 @@ for(i=0;i<fakeAtt.length;i++) {
                     return `${xAttScales[i](parksAvg[att])}px`;
                   });
 
-console.log(xAttScales[i](.32));
-console.log(parksAvg[att]);
+
 
 } ////end for loop creating dots for each attribute
 
@@ -480,6 +573,23 @@ console.log(parksAvg[att]);
 }); ///end d3 callback function
 
 
+//Variable Descriptions.
+/*
+Wildness: Wildness is calculated using human modification data based on land cover,
+human population density, roads, and other mapped data on ecological condition. Data are scaled from
+0(high degree of human modification) to 1(no measured human modification).
+
+Darkness: Light pollution represents satellite-measured light intensity during the night from the Visible
+ Infrared Imaging Radiometer Suite (VIIRS) nighttime lights data. This mapped dataset
+serves as a measure of the intactness of the night sky. Higher values represent more intense light
+pollution and thus lower wildland quality and greater ecological impacts.
+
+Quietness: mapped data of human-generated noise pollution is based on field observations and a spatial 
+model using landscape features that influence sound propagation. Greater intensity of human
+ noises (higher predicted dBA) is associated with reduced wildland quality and greater ecological impacts.
+
+
+*/
 
 
 
