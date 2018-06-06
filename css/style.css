@@ -1,6 +1,12 @@
+
+html {
+	width: 100%;
+}
+
 body {
 	font-family: 'Lato';
 	margin: 0;
+	width: 100%;
 }
 
 p {
@@ -13,6 +19,9 @@ p {
 	white-space: nowrap;
 }
 }
+
+
+/* PHOTO GRID STYLES */
 
 div.container {
     display: flex;
@@ -111,15 +120,37 @@ div#intro {
 		margin: 0px 0 30px 0;
 }
 
+
+div.title2 {
+	text-align: center;
+}
+
+/* VISUALIZATION STYLES */
+
+div.container2 {
+	display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    width: 90%;
+    margin: 0 auto;
+}
+
+div.container2 > #mapid {
+	flex: .5 1 450px;
+	height: 450px;
+	margin: 10px;
+}
+
+div.container2 > #vizBox {
+	flex: 1 1 450px;
+	height: auto;
+	margin: 10px;
+}
+
+
+
 /* Leaflet Map Styles */
 
-
-
-#mapid {
-	width: 600px;
-	height: 450px;
-	margin: 20px 20px;
-}
 
 .leaflet-popup-content-wrapper {
   background:#2c3e50;
@@ -159,6 +190,7 @@ div#photo {
 }
 
 div#photo img {
+		object-fit: cover;
 		width: 100%;
 		height:100%;
 }
@@ -217,35 +249,6 @@ div#medianPark {
     border-left: 2px solid #555;
 }
 
-@media only screen and (min-width: 1025px) {
-	#mapid {
-		display: inline-block;
-	}
-
-	#vizBox {
-		display: inline-block;
-	}
-}
 
 
-@media only screen and (max-width: 1025px) {
-	#mapid {
-		margin:  auto;
-	}
-
-	#vizBox {
-		margin: 30px auto;
-	}
-
-}
-
-@media only screen and (max-width: 650px) {
-	#mapid {
-		width: 80%;
-	}
-	div#vizBox {
-		margin: 30px auto;
-	}
-
-}
 

@@ -155,14 +155,7 @@ onEachFeature: function(feature, layer){
 
 
 var vizW = function() {
-    var win = $(window).width();
-    if(win >= 1025) {
-      return (win - 675);
-    } else if( ((win < 1025) && (win > 650)) ) {
-      return 600;
-    } else {
-      return (win - 50);
-    }
+    return $("#vizBox").width();
 };
 
 var vizH = 450; 
@@ -265,9 +258,6 @@ console.log(value);
 
 d3.selectAll(".focus").classed("hidden", true);
 
-//switch title
-d3.select("#title").html(`<h2>${wsa}</h2>`);
-
 
 //add focus labels
 for(var att of attributes) {
@@ -297,6 +287,11 @@ d3.select("#title").html(`<h2>${wsa}</h2>
   <p>Darker than ${value["Light PollutionAvg"]}% of National Parks</p>
   <p>Quieter than ${value["Noise PollutionAvg"]}% of National Parks</p>
   `);
+
+
+console.log(value["Area"]);
+console.log(wsa);
+
 
 /////////////////input from d3//////////////////////////
 } else {
@@ -339,7 +334,6 @@ for(var att of attributes) {
                     .style("top", y + "px");
 
         toolTip.text(parseFloat(wsa[att]).toFixed(2));
-
 
 }
 
