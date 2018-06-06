@@ -5,8 +5,61 @@ body {
 
 p {
 	font-family: 'Lato';
-	color: #333;
-	font-weight: 100;
+	font-weight: 400;
+}
+
+@media all and (min-width: 600px) {
+.nowrap {
+	white-space: nowrap;
+}
+}
+
+div.container {
+    display: flex;
+    flex-wrap: wrap;
+    align-content: stretch;
+    justify-content: center;
+    max-width: 1000px;
+}
+
+.container > div {
+	height: 150px;
+	margin: 2px;
+}
+
+.container > div.normal {
+	flex: 1 1 200px;
+	
+}
+
+.container > div.big {
+	flex: 2 1 250px;
+	
+}
+
+
+.container > div > img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.container > div.final > img {
+    object-fit: cover;
+    object-position: 0 10%;
+}
+
+
+@media all and (min-width: 810px) {
+	.container > .normal {
+	max-width: 305px;
+}
+}
+
+@media all and (max-width: 524px) {
+	.container > div {
+	flex: 1 1 100px;
+}
 }
 
 h3 {
@@ -27,7 +80,7 @@ div#intro {
 		}
 
 #intro p {
-	margin: 0;
+	margin: 10px 0;
 	line-height: 1.5;
 }
 
@@ -43,14 +96,20 @@ div#intro {
 
 		font-weight: normal;
 		line-height: 1.3;
-		font-size: 44px;
+		font-size: 60px;
 		font-family: 'Playfair Display', serif;
 		font-style: underline;
 		text-align: center;
-		margin: 20px 0 30px 0;
+		margin: 20px 0 10px 0;
 }
 
+#intro h2 {
 
+		font-weight: normal;
+		line-height: 1.3;
+		font-size: 20px;
+		margin: 0px 0 30px 0;
+}
 
 /* Leaflet Map Styles */
 
@@ -112,11 +171,16 @@ div#title {
 		font-weight: normal;
 		line-height: 1.3;
 		font-size: 16px;
+		max-height: 250px;
 		font-family: 'Playfair Display', serif;
 }
 
 div#title h2 {
 	margin: 0;
+}
+
+div#title p {
+	line-height: 1;
 }
 
 div#hoverTip {
