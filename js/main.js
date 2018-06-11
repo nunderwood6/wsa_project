@@ -20,8 +20,8 @@ var myMap = L.map('mapid').fitBounds([topLeft, botRight]);
 L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png', {
   attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="http://cartodb.com/attributions">CartoDB</a>',
   subdomains: 'abcd',
-	maxZoom: 14,
-	minZoom: 5
+  maxZoom: 14,
+  minZoom: 5
 }).addTo(myMap);
 
 var color = "#50267c",
@@ -246,7 +246,7 @@ onEachFeature: function(feature, layer){
 
   
   layer.bindPopup("<h3>" + feature.properties["MANAME"] + 
-  	"</h3><p>" + d3.format(',')(Math.floor(feature.properties["wsa_data_1"])) + 
+    "</h3><p>" + d3.format(',')(Math.floor(feature.properties["wsa_data_1"])) + 
     " Acres, " + feature.properties["MANAGER"] + "</p>");
 
   layer.on("click", function(e){
@@ -353,7 +353,7 @@ var dotHover = function(wsa) {
 
 //////////click event function
 
-var dotClickFocus = function (wsa) {
+var dotClickFocus = function (wsa,dotRef) {
 
 
 /////////////////input from leaflet///////////////////
@@ -421,7 +421,28 @@ d3.select("#title").html(`<h2>${value["Area"]} Wilderness Study Area</h2>
         .attr("fill", "#bbb")
         .attr("stroke-width", "0px");
           
+console.log(dotRef);
+  initial = dotRef;
 
+//change selected circle color
+      d3.select(`g.${dotRef}`).selectAll("circle")
+        .attr("r", 6)
+        .attr("fill-opacity", .9)
+        .attr("stroke-width", .1)
+        .attr("fill", function(d){
+            return colorizer(d,dotRef);
+        });
+
+      d3.selectAll(".symbol")
+        .attr("fill", function(d){
+            var name = d3.select(this).attr("id");
+            return colorizer(name, dotRef);
+        })
+
+      //recolor json
+      jsonLayer.eachLayer(function(layer){
+                layer.setStyle(style(layer.feature));
+      });
 
 ///add new focus
    vizBox.selectAll(`.${compressor(wsa["Area"])}`)
@@ -640,8 +661,9 @@ vizBox.append("g")
 
   })
   .on("click", function(d) {
-      dotClickFocus(d);
+      var att = $(this).parent().attr("class");
       leafZoom(compressor(d["Area"]));
+      dotClickFocus(d,att);
   });
 
 ///add Labels
@@ -683,17 +705,13 @@ vizBox.append("g")
 Wildness: Wildness is calculated using human modification data based on land cover,
 human population density, roads, and other mapped data on ecological condition. Data are scaled from
 0(high degree of human modification) to 1(no measured human modification).
-
 Darkness: Light pollution represents satellite-measured light intensity during the night from the Visible
  Infrared Imaging Radiometer Suite (VIIRS) nighttime lights data. This mapped dataset
 serves as a measure of the intactness of the night sky. Higher values represent more intense light
 pollution and thus lower wildland quality and greater ecological impacts.
-
 Quietness: mapped data of human-generated noise pollution is based on field observations and a spatial 
 model using landscape features that influence sound propagation. Greater intensity of human
  noises (higher predicted dBA) is associated with reduced wildland quality and greater ecological impacts.
-
-
 */
 
 
