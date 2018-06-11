@@ -50,13 +50,13 @@ var highStyle = function(feature){
 var scales = {
 Wildness:  d3.scaleQuantize()
            .domain([0,100])
-           .range(["#edf8e9", "#bae4b3", "#74c476", "#31a354", "#006d2c"]),
+           .range(['#a1d99b','#74c476','#41ab5d','#238b45','#005a32']),
 Darkness: d3.scaleQuantize()
                 .domain([0,100])
-                .range(['#eff3ff','#bdd7e7','#6baed6','#3182bd','#08519c']),                 
+                .range(['#9ecae1','#6baed6','#4292c6','#2171b5','#084594']),                 
  Quietness: d3.scaleQuantize()
                 .domain([0,100])
-                .range(['#f2f0f7','#cbc9e2','#9e9ac8','#756bb1','#54278f'])
+                .range(['#bcbddc','#9e9ac8','#807dba','#6a51a3','#4a1486'])
 }
 
  
