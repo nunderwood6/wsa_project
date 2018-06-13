@@ -744,6 +744,7 @@ vizBox.append("g")
                   .style("top", `${yScale(i)+5}px`);
 
  ///////////add median park values
+ /*
     d3.select("#container")
               .append("div")
               .attr("id", "medianPark")
@@ -753,6 +754,7 @@ vizBox.append("g")
                   .style("left", function(d){
                     return `${xAttScales[i](parksAvg[att])}px`;
                   });
+                  */
 
 
 } ////end for loop creating dots for each attribute
