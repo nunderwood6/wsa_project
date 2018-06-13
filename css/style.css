@@ -240,6 +240,7 @@ div#famous {
 	font-size: 10px;
 	text-align: center;
 	line-height: 1em;
+	color: #444;
 }
 
 div#axis {
@@ -249,6 +250,21 @@ div#axis {
 	line-height: 1em;
 	width: 20px;
 	text-transform: uppercase;
+	color: #555;
+}
+
+div#parkToggle {
+	position: absolute;
+	margin: 0;
+	text-align: center;
+	background-color: white;
+    color: black;
+    padding: 2px 4px;
+    border-width: 1px;
+    border-style: solid;
+    border-radius: 4px;
+    text-transform: uppercase;
+    font-size: 16px;
 }
 
 div#button {

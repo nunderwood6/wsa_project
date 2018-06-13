@@ -7,6 +7,8 @@ var topLeft = [49, -115],
 
 var myMap = L.map('mapid').fitBounds([topLeft, botRight]);
 
+var parksDrawn = true;
+
 /*'https://{s}.tile.thunderforest.com/landscape/{z}/{x}/{y}.png?apikey=d0f7c9187bfe46659b71bb1f9ea9838b',
 {
   attribution: '&copy; <a href="http://www.thunderforest.com/">Thunderforest</a>, &copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -49,13 +51,13 @@ var highStyle = function(feature){
 
 var scales = {
 Wildness: d3.scaleSequential()
-            .domain([-25,100])
+            .domain([25,100])
             .interpolator(d3.interpolateGreens),
 Darkness: d3.scaleSequential()
-                .domain([-25,100])
+                .domain([-10,65])
                 .interpolator(d3.interpolateBlues),                
 Quietness: d3.scaleSequential()
-            .domain([-25,100])
+            .domain([-10,100])
             .interpolator(d3.interpolatePurples)
 };
 
@@ -163,7 +165,6 @@ $.getJSON('data/wsa.geojson', function(data){
   var wsaData = data.features.sort(function(a,b){
    return b.properties.wsa_data_1 - a.properties.wsa_data_1;
   });
-  console.log(wsaData);
 
 //set w/h of svg and translate
   var w = 30,
@@ -359,7 +360,6 @@ var dotClickFocus = function (wsa,dotRef) {
 if(typeof wsa == "string") {
 
 var value = d3.select(`.${leafClassy(wsa)}`).data()[0];
-console.log(value);
 
   ///remove any already focused
   vizBox.selectAll("circle")
@@ -503,8 +503,6 @@ var parksData = wsaParksData.filter(unit => unit["Class"].includes("Park"))
                             .filter(unit => unit["Darkness"] != "NA")
                             .filter(unit => unit["Area"] != "Isle Royale National Park");
 
-
-
 //////////calculate averages for park data///////////
 var parksAvg = {};
 for(var att of attributes){
@@ -556,7 +554,6 @@ for(var wsa of wsaData) {
 
 console.log(wsaData);
 console.log(parksData);
-console.log(parksAvg);
 
 ///dynamic attribute domain finder
 
@@ -565,19 +562,23 @@ var xDom = function(att) {
     for(var wsa of wsaData) {
         attArray.push(wsa[att]);
     }
+    //add parks if parksDrawn is true
+    if(parksDrawn==true){
     for(var park of parksData){
         attArray.push(park[att]);
     }
+  }
     return d3.extent(attArray);
-
 };
+
+
 
 //dynamic scale generator
 var xScaleGen = function(att) {
       return d3.scaleLinear()
                 .domain(xDom(att))
                 .range([10, vizW()-10]);
-} ;
+};
 
 //xScale tests
 var wildScale = xScaleGen(attributes[0]);
@@ -665,25 +666,6 @@ vizBox.append("g")
       dotClickFocus(d,att);
   });
 
-////draw parks
-vizBox.selectAll(".parks")
-      .data(parksData)
-      .enter()
-      .append("rect")
-          .attr("class", function(d){
-                return compressor(d["Area"])+" park " + att;
-          })
-          .attr("width", 9)
-          .attr("height", 9)
-          .attr("fill", "#bbb")
-          .attr("opacity", .5)
-          .attr("x", function(d){
-            return xAttScales[i](d[att]);
-          })
-          .attr("y", function(d){
-            return yScale(i)+10;
-          });
-
 
 ///add buttons
     d3.select("div#container")
@@ -733,17 +715,62 @@ vizBox.selectAll(".parks")
 
 } ////end for loop creating dots for each attribute
 
+var addParks = function() {
+
+parksDrawn = true;
+//recreate scales
+  xAttScales = attributes.map(function(att){
+      return xScaleGen(att);
+});
+
+for(i=0;i<attributes.length;i++) {
+
+    var att = attributes[i];
+
+////draw parks
+vizBox.selectAll(".parks")
+      .data(parksData)
+      .enter()
+      .append("rect")
+          .attr("class", function(d){
+                return compressor(d["Area"])+" park " + att;
+          })
+          .attr("width", 9)
+          .attr("height", 9)
+          .attr("fill", "#bbb")
+          .attr("opacity", .5)
+          .attr("x", function(d){
+            return xAttScales[i](d[att]);
+          })
+          .attr("y", function(d){
+            return yScale(i)+10;
+          });
+
+  }
+
 //highlight famous parks
-var famous = ["Canyon lands National Park", "Glacier National Park", "Rocky Mountain National Park", "Yosemite National Park", "Saguaro National Park"];
+var famous = ["Canyon lands National Park", "Glacier National Park",
+"Rocky Mountain National Park", "Yosemite National Park", "Saguaro National Park"];
 
 for(var park of famous){
 //darken
   vizBox.selectAll(`.${compressor(park)}`)
-        .attr("fill", "#666")
-        .attr("opacity", 1);
+        .attr("fill", "#888")
+        .attr("opacity", 1)
+        .classed("front", true);
+
+//bring to front
+d3.selection.prototype.moveToFront = function() {  
+      return this.each(function(){
+        this.parentNode.appendChild(this);
+      });
+};
 
 
-    for(att of attributes){
+vizBox.selectAll(`.${compressor(park)}`)
+      .moveToFront();
+
+  for(att of attributes){
 //park labels
          d3.select("div#container")
             .append("div")
@@ -761,6 +788,80 @@ for(var park of famous){
               });
       }
 }
+
+///transition circle elements
+
+for(i=0;i<attributes.length;i++) {
+    var att = attributes[i];
+  d3.select(`g.${att}`)
+    .selectAll("circle")
+    .transition()
+    .duration(600)
+    .attr("cx", function(d){
+      return xAttScales[i](d[att]);
+    });
+}
+
+//switch button text
+d3.select("div#parkToggle")
+    .html(`<h4>WSAs Only</h4>`);
+
+};
+
+///////////////////////////////////////////////////////////////////////////////////
+
+//start with parks
+addParks();
+
+//////////////////remove parks function////////////////////////////////
+var removeParks = function(){
+
+    d3.selectAll(".park").remove();
+
+    parksDrawn = false;
+
+   d3.select("div#parkToggle")
+    .html(`<h4>WSAs And Parks</h4>`);
+    ///transition circle elements
+
+//recreate scales
+  xAttScales = attributes.map(function(att){
+      return xScaleGen(att);
+});
+
+for(i=0;i<attributes.length;i++) {
+  var att = attributes[i];
+
+  d3.select(`g.${att}`)
+    .selectAll("circle")
+    .transition()
+    .duration(600)
+    .attr("cx", function(d){
+      return xAttScales[i](d[att]);
+    });
+
+
+}
+
+};
+
+//add parks toggle button
+        d3.select("div#container")
+          .append("div")
+          .attr("id", "parkToggle")
+          .html(`<h4>WSAs Only</h4>`)
+          .style("left", `${vizW() - 50}px`)
+          .style("top", "30px")
+          .on("click", function(){
+              if(parksDrawn==true){
+                removeParks();
+              }
+              else{
+                addParks();
+              }
+          });
+
+
 
 
 }); ///end d3 callback function
