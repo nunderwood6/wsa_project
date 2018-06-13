@@ -235,6 +235,21 @@ div#toolTip.focus.hidden {
 	display: none;
 }
 
+div#famous {
+	position: absolute;
+	font-size: 10px;
+	text-align: center;
+	line-height: 1em;
+}
+
+div#axis {
+	position: absolute;
+	font-size: 12px;
+	text-align: center;
+	line-height: 1em;
+	width: 20px;
+	text-transform: uppercase;
+}
 
 div#button {
 	position: absolute;

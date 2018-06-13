@@ -48,16 +48,16 @@ var highStyle = function(feature){
 ///////instantiate scales
 
 var scales = {
-Wildness:  d3.scaleQuantize()
-           .domain([0,100])
-           .range(['#a1d99b','#74c476','#41ab5d','#238b45','#005a32']),
-Darkness: d3.scaleQuantize()
-                .domain([0,100])
-                .range(['#9ecae1','#6baed6','#4292c6','#2171b5','#084594']),                 
- Quietness: d3.scaleQuantize()
-                .domain([0,100])
-                .range(['#bcbddc','#9e9ac8','#807dba','#6a51a3','#4a1486'])
-}
+Wildness: d3.scaleSequential()
+            .domain([-25,100])
+            .interpolator(d3.interpolateGreens),
+Darkness: d3.scaleSequential()
+                .domain([-25,100])
+                .interpolator(d3.interpolateBlues),                
+Quietness: d3.scaleSequential()
+            .domain([-25,100])
+            .interpolator(d3.interpolatePurples)
+};
 
  
 var initial = "Wildness";
@@ -91,8 +91,7 @@ var labelClick = function(d) {
       //change selected circle color
       d3.select(`g.${target}`).selectAll("circle")
         .attr("r", 6)
-        .attr("fill-opacity", .9)
-        .attr("stroke-width", .1)
+        .attr("fill-opacity", .8)
         .attr("fill", function(d){
             return colorizer(d,target);
         });
@@ -220,7 +219,7 @@ var name = compressor(wsa.properties["MANAME"]);
                         return colorizer(name,initial);
                       
                   })
-                  .attr("fill-opacity", .9)
+                  .attr("fill-opacity", .8)
                   .on("click", function(d){
                       var target = d3.select(this).attr("id").replace("WildernessStudyArea", "");
                       dotClickFocus(target);
@@ -421,14 +420,12 @@ d3.select("#title").html(`<h2>${value["Area"]} Wilderness Study Area</h2>
         .attr("fill", "#bbb")
         .attr("stroke-width", "0px");
           
-console.log(dotRef);
   initial = dotRef;
 
 //change selected circle color
       d3.select(`g.${dotRef}`).selectAll("circle")
         .attr("r", 6)
-        .attr("fill-opacity", .9)
-        .attr("stroke-width", .1)
+        .attr("fill-opacity", .8)
         .attr("fill", function(d){
             return colorizer(d,dotRef);
         });
@@ -568,7 +565,9 @@ var xDom = function(att) {
     for(var wsa of wsaData) {
         attArray.push(wsa[att]);
     }
-    attArray.push(parksAvg[att]);
+    for(var park of parksData){
+        attArray.push(park[att]);
+    }
     return d3.extent(attArray);
 
 };
@@ -590,7 +589,7 @@ var xAttScales = attributes.map(function(att){
 /// create yScale
 var yScale = d3.scaleLinear()
                 .domain([0, (attributes.length-1)])
-                .range([275, vizH - 30]);
+                .range([200, vizH - 30]);
 
 ///////////////////////create circles
 for(i=0;i<attributes.length;i++) {
@@ -666,15 +665,53 @@ vizBox.append("g")
       dotClickFocus(d,att);
   });
 
-///add Labels
+////draw parks
+vizBox.selectAll(".parks")
+      .data(parksData)
+      .enter()
+      .append("rect")
+          .attr("class", function(d){
+                return compressor(d["Area"])+" park " + att;
+          })
+          .attr("width", 9)
+          .attr("height", 9)
+          .attr("fill", "#bbb")
+          .attr("opacity", .5)
+          .attr("x", function(d){
+            return xAttScales[i](d[att]);
+          })
+          .attr("y", function(d){
+            return yScale(i)+10;
+          });
+
+
+///add buttons
     d3.select("div#container")
         .append("div")
           .attr("class", att)
           .attr("id", "button")
           .html(`<h4>${att}</h4>`)
           .style("left", `${vizW()/2 - 30}px`)
-          .style("top", `${yScale(i)+10}px`)
+          .style("top", `${yScale(i)-50}px`)
           .on("click", labelClick);
+
+///axis start labels
+    d3.select("div#container")
+        .append("div")
+          .attr("id", "axis")
+          .html(`<p>Less ${att.replace("ness", "")}</p>`)
+          .style("left", "0px")
+          .style("top", `${yScale(i)-50}px`);
+         
+///axis end labels
+    d3.select("div#container")
+        .append("div")
+          .attr("id", "axis")
+          .html(`<p>${att.replace("ness", "").replace(att, (att+"er"))}</p>`)
+          .style("left", `${vizW() - 30}px`)
+          .style("top", `${yScale(i)-50}px`);
+
+
 
 ////////add lines
     d3.select("#container")
@@ -694,8 +731,37 @@ vizBox.append("g")
                   });
 
 
-
 } ////end for loop creating dots for each attribute
+
+//highlight famous parks
+var famous = ["Canyon lands National Park", "Glacier National Park", "Rocky Mountain National Park", "Yosemite National Park", "Saguaro National Park"];
+
+for(var park of famous){
+//darken
+  vizBox.selectAll(`.${compressor(park)}`)
+        .attr("fill", "#666")
+        .attr("opacity", 1);
+
+
+    for(att of attributes){
+//park labels
+         d3.select("div#container")
+            .append("div")
+              .attr("class", "park")
+              .attr("id", "famous")
+              .style("width", "20px")
+              .html(`<p>${park.replace("National Park", "NP").replace("Mountain", "Mtn")}</p>`)
+              .style("left", function(){
+              var x = d3.select(`.${compressor(park)}.${att}`).attr("x") - 10;
+                return x+"px";
+              } )
+              .style("top", function(){
+              var y = parseFloat(d3.select(`.${compressor(park)}.${att}`).attr("y")) - 5;
+                return y+"px";
+              });
+      }
+}
+
 
 }); ///end d3 callback function
 
@@ -705,10 +771,12 @@ vizBox.append("g")
 Wildness: Wildness is calculated using human modification data based on land cover,
 human population density, roads, and other mapped data on ecological condition. Data are scaled from
 0(high degree of human modification) to 1(no measured human modification).
+
 Darkness: Light pollution represents satellite-measured light intensity during the night from the Visible
  Infrared Imaging Radiometer Suite (VIIRS) nighttime lights data. This mapped dataset
 serves as a measure of the intactness of the night sky. Higher values represent more intense light
 pollution and thus lower wildland quality and greater ecological impacts.
+
 Quietness: mapped data of human-generated noise pollution is based on field observations and a spatial 
 model using landscape features that influence sound propagation. Greater intensity of human
  noises (higher predicted dBA) is associated with reduced wildland quality and greater ecological impacts.
