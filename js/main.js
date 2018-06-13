@@ -54,10 +54,10 @@ Wildness: d3.scaleSequential()
             .domain([25,100])
             .interpolator(d3.interpolateGreens),
 Darkness: d3.scaleSequential()
-                .domain([-10,65])
+                .domain([-10,60])
                 .interpolator(d3.interpolateBlues),                
 Quietness: d3.scaleSequential()
-            .domain([-10,100])
+            .domain([-50,100])
             .interpolator(d3.interpolatePurples)
 };
 
@@ -83,7 +83,15 @@ var labelClick = function(d) {
       //get attribute name
       var target = d3.select(this).text(); 
       initial = target;
-      
+
+      console.log(target);
+      //change selected button
+      d3.selectAll("#button")
+      .classed("selected", false);
+
+      d3.selectAll(`#button.${target}`)
+          .classed("selected", true);
+
       //remove previous highlights
       d3.selectAll(".circles")
           .attr("fill", "#bbb")
@@ -667,15 +675,49 @@ vizBox.append("g")
   });
 
 
-///add buttons
+///dotplot buttons
     d3.select("div#container")
         .append("div")
-          .attr("class", att)
+          .attr("class", function(){
+                if(att==initial){
+                  return att+ " selected";
+                }
+                else{
+                  return att;
+                }
+          })
           .attr("id", "button")
           .html(`<h4>${att}</h4>`)
           .style("left", `${vizW()/2 - 30}px`)
           .style("top", `${yScale(i)-50}px`)
           .on("click", labelClick);
+
+///map buttons
+    
+    var mapW = $("#mapContainer").width();
+    buttonPadding = 20,
+    buttonWidth = mapW/attributes.length- buttonPadding;
+
+    console.log(buttonWidth);
+
+
+    d3.select("div#mapContainer")
+        .append("div")
+          .attr("class", att)
+          .attr("id", "button")
+          .html(`<h4>${att}</h4>`)
+          .style("width", buttonWidth+"px")
+          .style("left", function(){
+                var left = i*buttonWidth + i*buttonPadding;
+                return left+"px";
+          })
+          .style("top", "-40px")
+          .on("click", labelClick);
+
+
+
+
+
 
 ///axis start labels
     d3.select("div#container")
