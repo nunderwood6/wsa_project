@@ -13,6 +13,12 @@ p {
 	margin-top: 15px;
 	font-family: 'Lato';
 	font-weight: 400;
+	max-width: 800px;
+}
+
+a {
+	cursor: pointer;
+	font-style: italic;
 }
 
 h4 {
@@ -28,6 +34,7 @@ h4 {
 
 .photoAtt {
 	text-align: center;
+	margin-top: 10px;
 	font-size: 14px;
 	font-style: italic;
 }
@@ -40,6 +47,7 @@ div.container {
     align-content: stretch;
     justify-content: center;
     max-width: 1000px;
+    margin: 0 auto;
 }
 
 .container > div {
@@ -90,6 +98,10 @@ h3 {
 	font-family: 'Lato';
 }
 
+h2 {
+	font-size: 1.8em;
+}
+
 
 /* INTRO SECTION STYLES */
 
@@ -99,13 +111,14 @@ div#intro {
 		width: 80%;
 		line-height: 1.5;
 		text-align: left;
-		font-size: 16px;
+		font-size: 1em;
 
 		}
 
 #intro p {
-	margin: 10px 0;
-	line-height: 1.5;
+	margin: 40px auto;
+	line-height: 1.7;
+	width: 80%;
 }
 
  #intro span#fs {
@@ -121,23 +134,27 @@ div#intro {
 		font-weight: normal;
 		line-height: 1.3;
 		font-size: 60px;
-		font-family: 'Playfair Display', serif;
 		font-style: underline;
 		text-align: center;
 		margin: 20px 0 10px 0;
-}
+	}
 
 #intro h2 {
 
 		font-weight: normal;
 		line-height: 1.3;
+		width: 95%;
+		max-width: 800px;
 		font-size: 20px;
-		margin: 0px 0 30px 0;
+		padding: 0px 30px 15px 30px;
+		margin: 0px auto 30px auto;
+		border-bottom: solid 1px #999;
 }
 
 
 div.title2 {
 	text-align: center;
+	margin: 40px 0;
 }
 
 /* VISUALIZATION STYLES */
@@ -146,7 +163,7 @@ div.container2 {
 	display: flex;
     justify-content: center;
     flex-wrap: wrap;
-    width: 95%;
+    width: 100%;
     margin: 0 auto;
     margin-bottom: 200px;
 }
@@ -154,7 +171,7 @@ div.container2 {
 div.container2 > #mapBox {
 	flex: .5 1 450px;
 	height: 450px;
-	margin: 10px;
+	margin: 10px 0px;
 }
 
 div.container2 > #vizBox {
@@ -207,14 +224,20 @@ div#container {
 
 div#title {
 		position: absolute;
-		left: 0px;
-		top: 0px;
+		left: 0;
+		top: 0;
 		width: 100%;
 		font-weight: normal;
 		line-height: 1.3;
 		font-size: 16px;
 		max-height: 250px;
-		font-family: 'Playfair Display', serif;
+		text-align: center;
+	
+}
+
+div#col p span#percent {
+	font-size: 3em;
+
 }
 
 div#title h2 {
@@ -224,6 +247,23 @@ div#title h2 {
 div#title p {
 	line-height: 1;
 }
+
+div#title #col {
+	display: inline-block;
+	width: 30%;
+	height:100%;
+	}
+
+	div#col p{
+		line-height: 1.2;
+		font-size: .8em;
+		padding: 7.5px 0;
+		width: 70%;
+		color: #555;
+		border-bottom: solid 1px #999;
+		border-top: solid 1px #999;
+		margin: 20px auto;
+	}
 
 div#hoverTip {
 	position: absolute;
@@ -248,7 +288,7 @@ div#famous {
 	font-size: 10px;
 	text-align: center;
 	line-height: 1em;
-	color: #444;
+	color: #aaa;
 }
 
 div#axis {
@@ -276,6 +316,7 @@ div#parkToggle {
 }
 
 div#button {
+	
 	position: absolute;
 	margin: 0;
 	text-align: center;
@@ -286,7 +327,7 @@ div#button {
     border-style: solid;
     border-radius: 4px;
     text-transform: uppercase;
-    font-size: 16px;
+    font-size: 20px;
 
 }
 
@@ -338,7 +379,3 @@ div#medianPark {
 	position: absolute;
     border-left: 2px solid #555;
 }
-
-
-
-
