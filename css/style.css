@@ -66,12 +66,16 @@ div.variables img {
 }
 
 div.variable {
-	flex: 0 0 200px;
-	
-	margin: 0 auto;
+	flex: 0 0 220px;
 	text-align: center;
+	margin: 0 auto;
+	
 }
 
+div#intro div.variables div.variable p {
+	
+	text-align: center;
+}
 
 div.iconAtt {
 	margin: 20px;
