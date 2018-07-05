@@ -78,7 +78,7 @@ div#intro div.variables div.variable p {
 }
 
 div.iconAtt {
-	margin: 20px;
+	margin: 0px;
 	font-size: 9px;
 }
 
@@ -164,6 +164,15 @@ div#intro {
 	line-height: 1.7;
 	width: 80%;
 }
+
+#intro p.first {
+	margin-top: 20px;
+}
+
+#intro p.second {
+	margin-bottom: 0px;
+}
+
 
  #intro span#fs {
 	color :#50267c;
