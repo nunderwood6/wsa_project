@@ -337,7 +337,13 @@ var vizW = function() {
     return $("#vizBox").width();
 };
 
+
+console.log(vizW());
 var vizH = 450; 
+if(vizW()<456){
+  vizH+=50;
+}
+console.log(vizH);
 
 var vizBox = d3.select("#vizBox")
                   .style("width", `${vizW()}px`)
@@ -352,11 +358,11 @@ var vizBox = d3.select("#vizBox")
 var title = d3.select("#container")
               .append("div")
               .html(`<div id="title">
-      <h2>Montana Wilderness Study Areas</h2>
+      <h2>On Average (Median) </h2>
       <div id="col">
         <p>
         Wilder than <br>
-        <span class="Wildness" id="percent">79% </span><br>
+        <span class="Wildness" id="percent">87% </span><br>
         of National Parks<br<
 
         </p>
@@ -364,14 +370,14 @@ var title = d3.select("#container")
       <div id="col">
         <p>
         Darker than <br>
-        <span class="Darkness" id="percent">43%</span><br>
+        <span class="Darkness" id="percent">44%</span><br>
         of National Parks
       </p>
       </div>
       <div id="col">
         <p>
         Quieter than <br>
-        <span class="Quietness" id="percent">64%</span><br>
+        <span class="Quietness" id="percent">56%</span><br>
         of National Parks
       </p>
       </div>
@@ -389,35 +395,63 @@ var compressor = function(str) {
 };
 
 ////////////////////event functions//////////////////////////////////////////
-var dotHover = function(wsa) {
+var dotHover = function(d,dotRef) {
 
+    //select WSA for each variable and add stroke
+    vizBox.selectAll(`.${compressor(d["Area"])}`)
+                                .attr("stroke", "black")
+                                .attr("stroke-opacity", .8)
+                                .attr("stroke-width", "1.2px");
 
-
+    //get reference to variable through parent
+    var dotClass = d3.select(dotRef.parentNode).attr("class");
+   
+  //find x and y of for each circle, position slightly left and up
       for(var att of attributes) {
-          var x = d3.select(`.${compressor(att)}`).select(`.${compressor(wsa["Area"])}`).attr("cx") - 15,
-              y = d3.select(`.${compressor(att)}`).select(`.${compressor(wsa["Area"])}`).attr("cy") - 20;
+          var x = d3.select(`.${compressor(att)}`).select(`.${compressor(d["Area"])}`).attr("cx") - 15,
+              y =d3.select(`.${compressor(att)}`).select(`.${compressor(d["Area"])}`).attr("cy") - 10;
 
-
-
+//create tooltip div
           var hoverTip = d3.select("#container")
                         .append("div")
                           .attr("class", "hover " + compressor(att))
-                          .attr("id", "hoverTip")
-                          .style("left", x + "px")
-                          .style("top", y + "px");
+                          .attr("id", "hoverTip");
 
-          if(att == "Wildness") {
-              if(x> vizW()/2+30){
-                y += 35;
-
+          //position div above if parks are drawn
+          if(parksDrawn){
+              if(x> vizW()/2 + 30){
+                hoverTip.style("max-width", "20px")
               }
-              hoverTip.style("left", x + "px")
-                      .style("top", y + "px")
-                  .text(wsa["Area"] +"\n"+ parseFloat(wsa[att+"Avg"]).toFixed(0)+"%");
+             
+            hoverTip.style("left", x + "px")
+                      .style("bottom", vizH- y + "px");
+
+
+
+          }  
+          //position div below if only WSA
+          else{
+              y += 25;
+
+          hoverTip.style("left", x + "px")
+                      .style("top", y + "px");
           }
-          else {
-              hoverTip.text(parseFloat(wsa[att+"Avg"]).toFixed(0)+ "%");
-            }
+
+
+          //if close to edge move left
+          if(x>vizW()-50){
+            x-=15;
+          }
+
+
+
+             //add div content
+          if(att == dotClass){
+                hoverTip.text(d["Area"] +"\n"+ parseFloat(d[att+"Avg"]).toFixed(0)+"%");
+          } else{
+                hoverTip.text(parseFloat(d[att+"Avg"]).toFixed(0)+ "%");
+          }
+
             
 }
 }
@@ -476,7 +510,7 @@ d3.selectAll(".focus").classed("hidden", true);
 
 
 //switch title
-d3.select("#title h2").text(`${wsa["Area"]} Wilderness Study Area`);
+d3.select("#title h2").text(`${wsa["Area"]}`);
 
 //change percent
 for(var att of attributes) {
@@ -599,6 +633,10 @@ var yScale = d3.scaleLinear()
                 .domain([0, (attributes.length-1)])
                 .range([225, vizH - 30]);
 
+if(vizW()<456){
+  yScale.range([275, vizH - 30]);
+}
+
 ///////////////////////create circles
 for(i=0;i<attributes.length;i++) {
 
@@ -651,13 +689,9 @@ vizBox.append("g")
   })
   .on("mouseover", function(d){
 
-    if($(this).hasClass("strongFocus")) {}
-
-    else {dotHover(d);
-                vizBox.selectAll(`.${compressor(d["Area"])}`)
-                                .attr("stroke", "black")
-                                .attr("stroke-opacity", .8)
-                                .attr("stroke-width", "1.2px");}
+    if( $(this).hasClass("strongFocus") ==false) {
+      dotHover(d,this);
+    }
                 
   })
   .on("mouseout", function(d){
@@ -861,13 +895,10 @@ addParks();
 //////////////////remove parks function////////////////////////////////
 var removeParks = function(){
 
+   parksDrawn = false;
+
+//remove squares
     d3.selectAll(".park").remove();
-
-    parksDrawn = false;
-
-   d3.select("div#parkToggle")
-    .html(`<h4>WSAs And Parks</h4>`);
-    ///transition circle elements
 
 //recreate scales
   xAttScales = attributes.map(function(att){
@@ -877,6 +908,7 @@ var removeParks = function(){
 for(i=0;i<attributes.length;i++) {
   var att = attributes[i];
 
+ ///transition circle elements
   d3.select(`g.${att}`)
     .selectAll("circle")
     .transition()
@@ -891,19 +923,28 @@ for(i=0;i<attributes.length;i++) {
 };
 
 //add parks toggle button
-        d3.select("div#container")
-          .append("div")
-          .attr("id", "parkToggle")
-          .html(`<h4>WSAs Only</h4>`)
-          .style("right", "10px")
-          .style("top", "-30px")
+        d3.selectAll(".title2 p")
           .on("click", function(){
+
+//only change if button is not active
+if(d3.select(this).classed("selected") == false){
+
+//change selected tab
+          //change selected
+      d3.selectAll(".title2 p")
+      .classed("selected", false);
+
+      d3.select(this)
+          .classed("selected", true);
+
               if(parksDrawn==true){
                 removeParks();
               }
               else{
                 addParks();
               }
+
+            }
           });
 
 
