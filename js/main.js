@@ -532,7 +532,7 @@ dotSvg.append("g")
           d3.selectAll(".hover").remove();
 
   })
-  .on("click", function(d) {
+  .on("click touchstart", function(d) {
       var att = $(this).parent().attr("class");
       leafZoom(comp(d["Area"]));
       openPopup("key", false, false, comp(d["Area"]));
