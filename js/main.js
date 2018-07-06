@@ -1,5 +1,17 @@
 function wrapper(){
 
+var parksDrawn = true;
+
+var addParks;
+var removeParks;
+var dotClickFocus;
+//list of expressed attributes
+var attributes = ["Wildness", "Darkness", "Quietness"];
+
+var initial = "Wildness";
+//to store key for leaflet/d3 switching
+var layerKey = {};
+
 //add scroll listener
 $("#scrollButton").on("click", function(){
   $('html, body').animate({
@@ -7,30 +19,14 @@ $("#scrollButton").on("click", function(){
 },500);
 })
 
-console.log($("#title2"));
 
-//initialize Leaflet map
+//utility function for formatting strings
+var comp = function(str) {
+return str.replace(/ /g, "").replace(/\//g, "").replace("BLM WSA", "").replace("FS WSA", "").replace("WildernessStudyArea", "");
+};
 
-var topLeft = [49, -115],
-    botRight = [44.295, -105];
-
-var myMap = L.map('mapid').fitBounds([topLeft, botRight]);
-
-var parksDrawn = true;
-
-//add tiles
-L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png', {
-  attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="http://cartodb.com/attributions">CartoDB</a>',
-  subdomains: 'abcd',
-  maxZoom: 14,
-  minZoom: 5
-}).addTo(myMap);
-
-var symbolLayer = L.featureGroup();
-
-var color = "#50267c",
-    colorHigh = "#4411ff";
-    
+//////////////////styling functions//////////////////////////////////////////////////////////////////////////////////
+  
 var style = function(feature){
        var input = feature.properties["MANAME"];
        var fill = colorizer(input,initial);
@@ -38,7 +34,6 @@ var style = function(feature){
                weight: 1,
                fillOpacity: .7};
   };
-
 
 var highStyle = function(feature){
        var input = feature.properties["MANAME"];
@@ -69,16 +64,13 @@ Mammal: d3.scaleSequential()
             .interpolator(d3.interpolateOranges),
 };
 
- 
-var initial = "Wildness";
-
 ////function to set color
 
 var colorizer = function(input, att) {
 
 //if input from leaflet, get in d3 form
   if(typeof input == "string") {
-    input = d3.select(`.${leafClassy(input).replace("WildernessStudyArea", "")}`).data()[0];
+    input = d3.select(`.${comp(input)}`).data()[0];
   }
 
   var scale = scales[att];
@@ -87,7 +79,182 @@ var colorizer = function(input, att) {
 
 };
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////
+//////////////////////////////initialize Leaflet map
+
+var topLeft = [49, -115],
+    botRight = [44.295, -105];
+
+//make user bounds
+var boundTopLeft = [53, -120],
+    boundBotRight = [40, -100];
+
+var bounds = L.latLngBounds(boundTopLeft, boundBotRight);
+
+var myMap = L.map('mapid', {
+        maxBounds: bounds,
+        maxBoundsViscosity:0.1,
+}).fitBounds([topLeft, botRight]);
+
+L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png', {
+  attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="http://cartodb.com/attributions">CartoDB</a>',
+  subdomains: 'abcd',
+  maxZoom: 14,
+  minZoom: 5
+}).addTo(myMap);
+
+var symbolLayer = L.featureGroup();
+
+/////////////add WSA geojsons
+$.getJSON('data/wsa.geojson', function(data){
+
+
+/////////////////////////////////////////////////////////////////////////////
+//Circles
+
+symbolLayer.addTo(myMap);
+
+//sort data so smaller symbols drawn on top
+  var wsaData = data.features.sort(function(a,b){
+   return b.properties.wsa_data_1 - a.properties.wsa_data_1;
+  });
+
+//set w/h of svg and translate
+  var w = 30,
+      h = 30,
+     tx = 6,
+     ty = 6;
+
+//make radius scale
+var rScale = d3.scaleSqrt()
+               .domain(d3.extent(wsaData.map(wsa => wsa.properties["wsa_data_1"])))
+               .range([5,15]);
+
+//////////////create div for each area/////////////////////////////////////////
+  for(var wsa of wsaData) {
+    var name = comp(wsa.properties["MANAME"]);
+
+  //find centroid
+    var centroid = d3.geoCentroid(wsa);
+
+    var lat = centroid[0],
+        long = centroid[1];
+
+//create feature specific icon
+//add marker to layer group so entire group can be targeted on zoom
+
+    var divIcon = L.divIcon({className: name});
+    var marker = L.marker([long, lat], {icon: divIcon});
+    symbolLayer.addLayer(marker);
+}
+
+//add svg's
+function addSymbols() {
+for(var wsa of wsaData) {
+var name = comp(wsa.properties["MANAME"]);
+
+
+//append svg to divIcon, add circle symbols
+    var symbol = d3.select(`div.${name}`)
+                  .append("svg")
+                  .attr("overflow", "visible")
+                  .attr("transform", "translate(" + tx + "," + ty + ")")
+                  .attr("width", w)
+                  .attr("height", h)
+                .append("circle")
+                  .attr("class", "symbol")
+                  .attr("id", `${name}`)
+                  .attr("cx", 0)
+                  .attr("cy", 0)
+                  .attr("r", function(d){
+                      return rScale(wsa.properties["wsa_data_1"]);
+                  })
+                  .attr("fill", function(d){
+                        return colorizer(name,initial);
+                      
+                  })
+                  .attr("fill-opacity", .8)
+                  .on("mouseover", function(d){
+                    d3.select(this).attr("opacity", .5)
+                  })
+                  .on("mouseout", function(d){
+                    d3.select(this).attr("opacity", .8)
+                  })
+                  .on("click", function(d){
+                      var target = d3.select(this).attr("id").replace("WildernessStudyArea", "");
+                      leafZoom(target);
+                      setTimeout(function(){
+                        openPopup("key", false, false, target)
+                      }, 300);
+                      dotClickFocus(target);
+                      
+                  });
+  }
+};
+addSymbols();
+//////////////////////////////////////////////////////////////////////////////////////////////
+///load geojson
+
+////////////////////////////////////////////add geojson's/////////////////////////////////
+  jsonLayer = L.geoJson(data, {
+
+onEachFeature: function(feature, layer){
+
+  var wsa = comp(feature.properties["MANAME"]);
+
+ //set styles based on attribute
+  layer.setStyle(style(feature));
+
+  ///store bounds in map for access by d3 listener
+  layerKey[wsa] = [layer, feature];
+
+  layer.on("click", function(e){
+      leafZoom(wsa);
+      openPopup(e, layer, feature);
+      dotClickFocus(wsa);
+  });
+
+  layer.on("mouseover",function (e){
+    layer.setStyle(highStyle(feature));
+  });
+
+  layer.on("mouseout", function(e){
+      layer.setStyle(style(feature));
+  });
+  
+}
+  });
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+///add and remove dots and json depending on zoom level. Fires at end of transition
+myMap.on("zoomend", function(){
+
+    if(myMap.getZoom() < 8 && myMap.hasLayer(jsonLayer)) {
+      myMap.removeLayer(jsonLayer);
+    }
+    if (myMap.getZoom() >= 8 && myMap.hasLayer(jsonLayer) == false)
+    {
+        myMap.addLayer(jsonLayer);
+    }   
+    if(myMap.getZoom() >= 8 && myMap.hasLayer(symbolLayer)) {
+      myMap.removeLayer(symbolLayer);
+    }
+    //leaflet destroys contents of div on remove, repopulate with symbols
+    if (myMap.getZoom() < 8 && myMap.hasLayer(symbolLayer) == false)
+    {
+        myMap.addLayer(symbolLayer);
+        addSymbols();
+    }   
+})
+
+});
+
+///////////////////////////////////////////////////////////////
 var labelClick = function(d) {
+
+  console.log(d);
       //get attribute name
       var target = d3.select(this).text(); 
       initial = target;
@@ -131,15 +298,9 @@ var labelClick = function(d) {
 
 };
 
-
-
-
-
-////////hacky solution to get latlong bounds for d3 event
-var layerKey = {};
+////////////////////////////////////////////////////////////////////////
 
 var leafZoom = function(key) {
-console.log("Start Zoom");
 
 if(myMap.hasLayer(jsonLayer) == false) {
   myMap.removeLayer(symbolLayer);
@@ -157,21 +318,9 @@ if(myMap.hasLayer(jsonLayer) == false) {
     */
 
   };
+//////////////////////////////////////////////////////////////////////////
 
-
-///format wsa names to match d3 data
-var leafClass = function(feat) {
-  return feat.properties["MANAME"].replace(" Wilderness Study Area", "").replace(/ /g, "").replace("/", "");
-};
-
-var leafClassy = function(feat) {
-  return feat.replace(" Wilderness Study Area", "").replace(/ /g, "").replace("/", "");
-}
-
-///click function handler for leaflet
 var openPopup = function(e, layer, feature, key) {
-
-  console.log("opening popup now");
 
   if(e == "key"){
     var layer = layerKey[key][0],
@@ -185,167 +334,30 @@ var openPopup = function(e, layer, feature, key) {
 };
 
 
-/////////////add WSA geojsons
-$.getJSON('data/wsa.geojson', function(data){
-
-///add proportional circles
-
-//check data
-  var wsaData = data.features.sort(function(a,b){
-   return b.properties.wsa_data_1 - a.properties.wsa_data_1;
-  });
-
-//set w/h of svg and translate
-  var w = 30,
-      h = 30,
-     tx = 6,
-     ty = 6;
-
-//make radius scale
-var rScale = d3.scaleSqrt()
-               .domain(d3.extent(wsaData.map(wsa => wsa.properties["wsa_data_1"])))
-               .range([5,15]);
-/////////////////////////////////////////////////////////////////////////////
-//Circles
-/////////////////////////////////////////////////////////////////////////////
-symbolLayer.addTo(myMap);
-
-//create markers and add to layergroup
-  for(var wsa of wsaData) {
-    var name = compressor(wsa.properties["MANAME"]);
-    var centroid = d3.geoCentroid(wsa);
-
-    var lat = centroid[0],
-        long = centroid[1];
-
-//create feature specific icon
-//add marker to layer group so entire group can be targeted on zoom
-
-    var divIcon = L.divIcon({className: name});
-    var marker = L.marker([long, lat], {icon: divIcon});
-    symbolLayer.addLayer(marker);
-}
-
-//add svg's
-function addSymbols() {
-for(var wsa of wsaData) {
-var name = compressor(wsa.properties["MANAME"]);
-
-//append svg to divIcon, add circle symbols
-    var symbol = d3.select(`.${name}`)
-                  .append("svg")
-                  .attr("overflow", "visible")
-                  .attr("transform", "translate(" + tx + "," + ty + ")")
-                  .attr("width", w)
-                  .attr("height", h)
-                .append("circle")
-                  .attr("class", "symbol")
-                  .attr("id", `${name}`)
-                  .attr("cx", 0)
-                  .attr("cy", 0)
-                  .attr("r", function(d){
-                      return rScale(wsa.properties["wsa_data_1"]);
-                  })
-                  .attr("fill", function(d){
-                        return colorizer(name,initial);
-                      
-                  })
-                  .attr("fill-opacity", .8)
-                  .on("mouseover", function(d){
-                    console.log("here");
-                    d3.select(this).attr("opacity", .5)
-                  })
-                  .on("mouseout", function(d){
-                    d3.select(this).attr("opacity", .8)
-                  })
-                  .on("click", function(d){
-                      var target = d3.select(this).attr("id").replace("WildernessStudyArea", "");
-                      leafZoom(target);
-                      setTimeout(function(){
-                        openPopup("key", false, false, target)
-                      }, 300);
-                      dotClickFocus(target);
-                      
-                  });
-  }
-};
-addSymbols();
-//////////////////////////////////////////////////////////////////////////////////////////////
-///Add GeoJson
-
-////////////////////////////////////////////add geojson's/////////////////////////////////
-  jsonLayer = L.geoJson(data, {
-
-onEachFeature: function(feature, layer){
-
- //set styles based on attribute
-  layer.setStyle(style(feature));
-
-
-  ///store bounds in map for access by d3 listener
-  layerKey[leafClass(feature)] = [layer, feature];
-
-  layer.on("click", function(e){
-      leafZoom(compressor(feature.properties["MANAME"]).replace("WildernessStudyArea", ""));
-      openPopup(e, layer, feature);
-      dotClickFocus(feature.properties["MANAME"]);
-  });
-
-  layer.on("mouseover",function (e){
-    layer.setStyle(highStyle(feature));
-  });
-
-  layer.on("mouseout", function(e){
-      layer.setStyle(style(feature));
-  });
-  
-}
-  });
-
-/////////////////////////////////////////////////////////////////////////////////////////////////
-
-///add and remove dots and json depending on zoom level. Fires at end of transition
-myMap.on("zoomend", function(){
-
-  console.log("map zoom functions here!");
-    if(myMap.getZoom() < 8 && myMap.hasLayer(jsonLayer)) {
-      myMap.removeLayer(jsonLayer);
-    }
-    if (myMap.getZoom() >= 8 && myMap.hasLayer(jsonLayer) == false)
-    {
-        myMap.addLayer(jsonLayer);
-    }   
-    if(myMap.getZoom() >= 8 && myMap.hasLayer(symbolLayer)) {
-      myMap.removeLayer(symbolLayer);
-    }
-    //leaflet destroys contents of div on remove, repopulate with symbols
-    if (myMap.getZoom() < 8 && myMap.hasLayer(symbolLayer) == false)
-    {
-        myMap.addLayer(symbolLayer);
-        addSymbols();
-    }   
-})
-
-});
-
-
+////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //////////////// Linked Dot Plot///////////////////////////////////////////
-
 
 var vizW = function() {
     return $("#vizBox").width();
 };
 
-
-console.log(vizW());
 var vizH = 450; 
 if(vizW()<456){
   vizH+=50;
 }
-console.log(vizH);
 
-var vizBox = d3.select("#vizBox")
+var yScale = d3.scaleLinear()
+                .domain([0, (attributes.length-1)])
+                .range([225, vizH - 30]);
+
+if(vizW()<456){
+  yScale.range([275, vizH - 30]);
+}
+
+var dotSvg = d3.select("#vizBox")
                   .style("width", `${vizW()}px`)
                   .style("height", vizH)
                   .append("div")
@@ -355,183 +367,14 @@ var vizBox = d3.select("#vizBox")
                     .attr("width", vizW())
                     .attr("height", vizH);
 
-var title = d3.select("#container")
-              .append("div")
-              .html(`<div id="title">
-      <h2>On Average (Median) </h2>
-      <div id="col">
-        <p>
-        Wilder than <br>
-        <span class="Wildness" id="percent">87% </span><br>
-        of National Parks<br<
 
-        </p>
-      </div>
-      <div id="col">
-        <p>
-        Darker than <br>
-        <span class="Darkness" id="percent">44%</span><br>
-        of National Parks
-      </p>
-      </div>
-      <div id="col">
-        <p>
-        Quieter than <br>
-        <span class="Quietness" id="percent">56%</span><br>
-        of National Parks
-      </p>
-      </div>
-
-        </div`);
-
-              /*
-              <p>Wilder than ${value["WildnessAvg"]}% of National Parks</p>
-  <p>Darker than ${value["DarknessAvg"]}% of National Parks</p>
-  <p>Quieter than ${value["QuietnessAvg"]}% of National Parks</p>
-  */
-
-var compressor = function(str) {
-    return str.replace(/ /g, "").replace("/", "").replace("BLM WSA", "").replace("FS WSA", "");
-};
-
-////////////////////event functions//////////////////////////////////////////
-var dotHover = function(d,dotRef) {
-
-    //select WSA for each variable and add stroke
-    vizBox.selectAll(`.${compressor(d["Area"])}`)
-                                .attr("stroke", "black")
-                                .attr("stroke-opacity", .8)
-                                .attr("stroke-width", "1.2px");
-
-    //get reference to variable through parent
-    var dotClass = d3.select(dotRef.parentNode).attr("class");
-   
-  //find x and y of for each circle, position slightly left and up
-      for(var att of attributes) {
-          var x = d3.select(`.${compressor(att)}`).select(`.${compressor(d["Area"])}`).attr("cx") - 15,
-              y =d3.select(`.${compressor(att)}`).select(`.${compressor(d["Area"])}`).attr("cy") - 10;
-
-//create tooltip div
-          var hoverTip = d3.select("#container")
-                        .append("div")
-                          .attr("class", "hover " + compressor(att))
-                          .attr("id", "hoverTip");
-
-          //position div above if parks are drawn
-          if(parksDrawn){
-              if(x> vizW()/2 + 30){
-                hoverTip.style("max-width", "20px")
-              }
-             
-            hoverTip.style("left", x + "px")
-                      .style("bottom", vizH- y + "px");
-
-
-
-          }  
-          //position div below if only WSA
-          else{
-              y += 25;
-
-          hoverTip.style("left", x + "px")
-                      .style("top", y + "px");
-          }
-
-
-          //if close to edge move left
-          if(x>vizW()-50){
-            x-=15;
-          }
-
-
-
-             //add div content
-          if(att == dotClass){
-                hoverTip.text(d["Area"] +"\n"+ parseFloat(d[att+"Avg"]).toFixed(0)+"%");
-          } else{
-                hoverTip.text(parseFloat(d[att+"Avg"]).toFixed(0)+ "%");
-          }
-
-            
-}
-}
-
-//////////click event function
-
-var dotClickFocus = function (wsa,dotRef) {
-
-/////////////////input from leaflet///////////////////
-if(typeof wsa == "string") {
-var wsa = d3.select(`.${leafClassy(wsa)}`).data()[0];
-var dotRef = initial;
-}
-
-  console.log(wsa);
-  ///remove any already focused
- vizBox.selectAll("circle")
-        .classed("strongFocus", false)
-        .attr("r", 5)
-        .attr("fill-opacity", ".5")
-        .attr("fill", "#bbb")
-        .attr("stroke-width", "0px");
-          
-  initial = dotRef;
-
-//change selected circle color
-      d3.select(`g.${dotRef}`).selectAll("circle")
-        .attr("r", 6)
-        .attr("fill-opacity", .8)
-        .attr("fill", function(d){
-            return colorizer(d,dotRef);
-        });
-
-      d3.selectAll(".symbol")
-        .attr("fill", function(d){
-            var name = d3.select(this).attr("id");
-            return colorizer(name, dotRef);
-        })
-
-      //recolor json
-      jsonLayer.eachLayer(function(layer){
-                layer.setStyle(style(layer.feature));
-      });
-
-///add new focus
-   vizBox.selectAll(`.${compressor(wsa["Area"])}`)
-          .classed("strongFocus", true)
-          .attr("r", 10)
-          .attr("fill-opacity", ".8")
-          .attr("fill", function(d){
-              var att = $(this).parent().attr("class");
-              return colorizer(d,att);
-          });
-
-d3.selectAll(".focus").classed("hidden", true);
-
-
-//switch title
-d3.select("#title h2").text(`${wsa["Area"]}`);
-
-//change percent
-for(var att of attributes) {
-d3.select(`span.${att}`).html(wsa[att+"Avg"]+ "%")
-          .style("color", function(){
-      return colorizer(wsa, att);
-    });
-
-}
-
-};
-
-/////////////////////////////////////////////////////////////////////////////////////
-//list of expressed attributes
-var attributes = ["Wildness", "Darkness", "Quietness"];
 //////////////////////////add wsa data////////////////////////////////
 
 d3.csv("data/wsa.csv", function (error, wsaParksData){
     if(error) throw error;
 
-
+////////////////////////////////////////////////////////////////////
+/////////Data Cleaning and Sorting////////////////////////////////////////////////////////////////////////////////
 
 ///////////////////separate wsa and park data//////////////////////
 var wsaData = wsaParksData.filter(unit => !unit["Class"].includes("Park"));
@@ -595,6 +438,8 @@ for(var wsa of wsaData) {
 
 console.log(wsaData);
 console.log(parksData);
+/////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////creating x scale(inside ajax because xScale depends of data/////////////////////////////////////////////////////////////////////////////////
 
 ///dynamic attribute domain finder
 
@@ -612,8 +457,6 @@ var xDom = function(att) {
     return d3.extent(attArray);
 };
 
-
-
 //dynamic scale generator
 var xScaleGen = function(att) {
       return d3.scaleLinear()
@@ -621,23 +464,12 @@ var xScaleGen = function(att) {
                 .range([10, vizW()-10]);
 };
 
-//xScale tests
-var wildScale = xScaleGen(attributes[0]);
-
+//create scale for each attribute
 var xAttScales = attributes.map(function(att){
       return xScaleGen(att);
 });
 
-/// create yScale
-var yScale = d3.scaleLinear()
-                .domain([0, (attributes.length-1)])
-                .range([225, vizH - 30]);
-
-if(vizW()<456){
-  yScale.range([275, vizH - 30]);
-}
-
-///////////////////////create circles
+///////////////////////draw dots////////////////////////////////////////////////////////////////////////////////////
 for(i=0;i<attributes.length;i++) {
 
     var att = attributes[i];
@@ -647,15 +479,14 @@ for(i=0;i<attributes.length;i++) {
         return b[att] - a[att];
     });
 
-////draw dots
-vizBox.append("g")
-  .attr("class", compressor(att))
+dotSvg.append("g")
+  .attr("class", comp(att))
 .selectAll("circle")
 .data(sorted)
 .enter()
 .append("circle")
   .attr("class", function(d) {
-    return "circles " + compressor(d["Area"]);
+    return "circles " + comp(d["Area"]);
     })
   .attr("cx", function(d) {
     return xAttScales[i](d[att]);
@@ -696,94 +527,153 @@ vizBox.append("g")
   })
   .on("mouseout", function(d){
 
-    vizBox.selectAll(`.${compressor(d["Area"])}`)
+    dotSvg.selectAll(`.${comp(d["Area"])}`)
           .attr("stroke", "none");
           d3.selectAll(".hover").remove();
 
   })
   .on("click", function(d) {
       var att = $(this).parent().attr("class");
-      leafZoom(compressor(d["Area"]));
-      openPopup("key", false, false, compressor(d["Area"]));
-      //openPopup("key", false, false, compressor(d["Area"]));
+      leafZoom(comp(d["Area"]));
+      openPopup("key", false, false, comp(d["Area"]));
+      //openPopup("key", false, false, comp(d["Area"]));
       dotClickFocus(d,att);
   });
 
-/*
-///dotplot buttons
-    d3.select("div#container")
-        .append("div")
-          .attr("class", function(){
-                if(att==initial){
-                  return att+ " selected";
-                }
-                else{
-                  return att;
-                }
-          })
-          .attr("id", "button")
-          .html(`<h4>${att}</h4>`)
-          .style("left", `${vizW()/2 - 30}px`)
-          .style("top", `${yScale(i)-50}px`)
-          .on("click", labelClick);
-*/
+////////////////////event functions///////////////////////////////////////////////////////////////
+var dotHover = function(d,dotRef) {
+
+    //select WSA for each variable and add stroke
+    dotSvg.selectAll(`.${comp(d["Area"])}`)
+                                .attr("stroke", "black")
+                                .attr("stroke-opacity", .8)
+                                .attr("stroke-width", "1.2px");
+
+    //get reference to variable through parent
+    var dotClass = d3.select(dotRef.parentNode).attr("class");
+   
+  //find x and y of for each circle, position slightly left and up
+      for(var att of attributes) {
+          var x = d3.select(`.${att}`).select(`.${comp(d["Area"])}`).attr("cx") - 15,
+              y =d3.select(`.${att}`).select(`.${comp(d["Area"])}`).attr("cy") - 10;
+
+//create tooltip div
+          var hoverTip = d3.select("#container")
+                        .append("div")
+                          .attr("class", "hover " + att)
+                          .attr("id", "hoverTip");
+
+          //if close to edge move left
+          if(x>vizW()-50){
+            x-=15;
+          }
+
+          //position div above if parks are drawn
+          if(parksDrawn){
+              hoverTip.style("left", x + "px")
+                      .style("bottom", vizH- y + "px");
+
+              if(x> vizW()/2 + 30){
+                hoverTip.style("max-width", "20px")
+              }    
+          }  
+          //position div below if only WSA
+          else{
+              y += 25;
+          hoverTip.style("left", x + "px")
+                  .style("top", y + "px");
+          }
+
+          //add div content
+          if(att == dotClass){
+                hoverTip.text(d["Area"] +"\n"+ parseFloat(d[att+"Avg"]).toFixed(0)+"%");
+          } else{
+                hoverTip.text(parseFloat(d[att+"Avg"]).toFixed(0)+ "%");
+          }        
+}
+}
+
+//////////click event function
+
+  dotClickFocus = function (wsa,dotRef) {
+
+/////////////////input from leaflet///////////////////
+if(typeof wsa == "string") {
+var wsa = d3.select(`circle.${comp(wsa)}`).data()[0];
+var dotRef = initial;
+}
+
+  ///remove any already focused
+ dotSvg.selectAll("circle")
+        .classed("strongFocus", false)
+        .attr("r", 5)
+        .attr("fill-opacity", ".5")
+        .attr("fill", "#bbb")
+        .attr("stroke-width", "0px");
+          
+  initial = dotRef;
+
+//change selected circle color
+      d3.select(`g.${dotRef}`).selectAll("circle")
+        .attr("r", 6)
+        .attr("fill-opacity", .8)
+        .attr("fill", function(d){
+            return colorizer(d,dotRef);
+        });
+
+      d3.selectAll(".symbol")
+        .attr("fill", function(d){
+            var name = d3.select(this).attr("id");
+            return colorizer(name, dotRef);
+        })
+
+      //recolor json
+      jsonLayer.eachLayer(function(layer){
+                layer.setStyle(style(layer.feature));
+      });
+
+///add new focus
+   dotSvg.selectAll(`circle.${comp(wsa["Area"])}`)
+          .classed("strongFocus", true)
+          .attr("r", 10)
+          .attr("fill-opacity", ".8")
+          .attr("fill", function(d){
+              var att = $(this).parent().attr("class");
+              return colorizer(d,att);
+          });
+
+d3.selectAll(".focus").classed("hidden", true);
 
 
-///map buttons
-    
-    var mapW = $("#mapContainer").width();
-    buttonPadding = 20,
-    buttonWidth = mapW/attributes.length- buttonPadding;
+//switch title
+d3.select("#title h2").text(`${wsa["Area"]}`);
+
+//change percent
+for(var att of attributes) {
+d3.select(`span.${att}`).html(wsa[att+"Avg"]+ "%")
+          .style("color", function(){
+      return colorizer(wsa, att);
+    });
+
+}
+
+//change selected button
+d3.selectAll("#button")
+      .classed("selected", false);
+
+      d3.selectAll(`#button.${dotRef}`)
+          .classed("selected", true);
 
 
-    d3.select("div#mapContainer")
-        .append("div")
-          .attr("class", att)
-          .attr("id", "button")
-          .html(`<h4>${att}</h4>`)
-          .style("width", buttonWidth+"px")
-          .style("left", function(){
-                var left = i*buttonWidth + i*buttonPadding;
-                return left+"px";
-          })
-          .style("top", "-40px")
-          .on("click", labelClick);
-         
-///variable labels
-console.log(vizW());
+};
 
-    d3.select("div#container")
-        .append("div")
-          .attr("id", "axis")
-          .html(`<p>${att}</p>`)
-          .style("left", `${vizW()/2 -40}px`)
-          .style("top", `${yScale(i)-50}px`);
-
-
-
-////////add lines
-    d3.select("#container")
-              .append("div")
-              .attr("id", "line")
-                  .style("top", `${yScale(i)+5}px`);
-
- ///////////add median park values
- /*
-    d3.select("#container")
-              .append("div")
-              .attr("id", "medianPark")
-                  .style("width", "2px")
-                  .style("height", "10px")
-                  .style("top", `${yScale(i)}px`)
-                  .style("left", function(d){
-                    return `${xAttScales[i](parksAvg[att])}px`;
-                  });
-                  */
-
-
+/////////////////////////////////////////////////////////////////////////////////////
+ 
 } ////end for loop creating dots for each attribute
 
-var addParks = function() {
+
+////////////////////////////////////////////////////////////////////////////////////////
+addParks = function() {
 
 parksDrawn = true;
 //recreate scales
@@ -796,12 +686,12 @@ for(i=0;i<attributes.length;i++) {
     var att = attributes[i];
 
 ////draw parks
-vizBox.selectAll(".parks")
+dotSvg.selectAll(".parks")
       .data(parksData)
       .enter()
       .append("rect")
           .attr("class", function(d){
-                return compressor(d["Area"])+" park " + att;
+                return comp(d["Area"])+" park " + att;
           })
           .attr("width", 9)
           .attr("height", 9)
@@ -817,61 +707,10 @@ vizBox.selectAll(".parks")
 //color percentages
     d3.select(`span.${att}`)
     .style("color", function(){
-      console.log(colorizer(wsaData[20],att));
       return colorizer(wsaData[20], att);
     });
 
-  }
-
-
-
-
-//highlight famous parks
-var famous = ["Canyon lands National Park",
-"Rocky Mountain National Park", "Saguaro National Park"];
-
-for(var park of famous){
-//darken
-  vizBox.selectAll(`.${compressor(park)}`)
-        .attr("stroke", "#000")
-        //.attr("stroke-width", .5)
-        //.attr("opacity", 1)
-        .classed("front", true);
-
-//bring to front
-d3.selection.prototype.moveToFront = function() {  
-      return this.each(function(){
-        this.parentNode.appendChild(this);
-      });
-};
-
-
-vizBox.selectAll(`.${compressor(park)}`)
-      .moveToFront();
-
-  for(att of attributes){
-//park labels
-         d3.select("div#container")
-            .append("div")
-              .attr("class", "park")
-              .attr("id", "famous")
-              .style("width", "20px")
-              .html(`<p>${park.replace("National Park", "NP").replace("Mountain", "Mtn")}</p>`)
-              .style("left", function(){
-              var x = d3.select(`.${compressor(park)}.${att}`).attr("x") - 10;
-                return x+"px";
-              } )
-              .style("top", function(){
-              var y = parseFloat(d3.select(`.${compressor(park)}.${att}`).attr("y")) - 5;
-                return y+"px";
-              });
-      }
-}
-
 ///transition circle elements
-
-for(i=0;i<attributes.length;i++) {
-    var att = attributes[i];
   d3.select(`g.${att}`)
     .selectAll("circle")
     .transition()
@@ -879,21 +718,57 @@ for(i=0;i<attributes.length;i++) {
     .attr("cx", function(d){
       return xAttScales[i](d[att]);
     });
-}
 
-//switch button text
-d3.select("div#parkToggle")
-    .html(`<h4>WSAs Only</h4>`);
+  }
+///////////////////////////////////////////
+//highlight famous parks
+var famous = ["Canyon lands National Park",
+"Rocky Mountain National Park", "Saguaro National Park"];
+
+//add move to front utility function
+d3.selection.prototype.moveToFront = function() {  
+      return this.each(function(){
+        this.parentNode.appendChild(this);
+      });
+    }
+
+for(var park of famous){
+//darken
+  dotSvg.selectAll(`.${comp(park)}`)
+        .attr("stroke", "#000")
+        .classed("front", true);
+
+//move to front
+  dotSvg.selectAll(`.${comp(park)}`)
+      .moveToFront();
+
+  for(att of attributes){
+  //park labels
+ d3.select("div#container")
+    .append("div")
+      .attr("class", "park")
+      .attr("id", "famous")
+      .style("width", "20px")
+      .html(`<p>${park.replace("National Park", "NP").replace("Mountain", "Mtn")}</p>`)
+      .style("left", function(){
+      var x = d3.select(`.${comp(park)}.${att}`).attr("x") - 10;
+        return x+"px";
+      } )
+      .style("top", function(){
+      var y = parseFloat(d3.select(`.${comp(park)}.${att}`).attr("y")) - 5;
+        return y+"px";
+      });
+    }
 
 };
 
-///////////////////////////////////////////////////////////////////////////////////
 
-//start with parks
+
+}; ///////////////////end add parks function
 addParks();
 
 //////////////////remove parks function////////////////////////////////
-var removeParks = function(){
+  removeParks = function(){
 
    parksDrawn = false;
 
@@ -922,7 +797,13 @@ for(i=0;i<attributes.length;i++) {
 
 };
 
-//add parks toggle button
+
+}); ///end d3 callback function
+
+
+////////////////////add everything not svg to dotplot here//////////////////////////////////////////////////////
+
+//////////////add parks toggle button////////
         d3.selectAll(".title2 p")
           .on("click", function(){
 
@@ -930,7 +811,6 @@ for(i=0;i<attributes.length;i++) {
 if(d3.select(this).classed("selected") == false){
 
 //change selected tab
-          //change selected
       d3.selectAll(".title2 p")
       .classed("selected", false);
 
@@ -946,28 +826,129 @@ if(d3.select(this).classed("selected") == false){
 
             }
           });
+//////////////////add key//////////////////////////////////////
 
+var keyAdjust = 0;
+if(vizW()< 450){
+  keyAdjust+=30;
+}
 
+var key = dotSvg.append("g")
+        .attr("class", "key")
+        .attr("transform", `translate(10,${yScale(0)-50-keyAdjust})`);
 
-
-}); ///end d3 callback function
-
-
-//Variable Descriptions.
+  //add border to key
 /*
-Wildness: Wildness is calculated using human modification data based on land cover,
-human population density, roads, and other mapped data on ecological condition. Data are scaled from
-0(high degree of human modification) to 1(no measured human modification).
-Darkness: Light pollution represents satellite-measured light intensity during the night from the Visible
- Infrared Imaging Radiometer Suite (VIIRS) nighttime lights data. This mapped dataset
-serves as a measure of the intactness of the night sky. Higher values represent more intense light
-pollution and thus lower wildland quality and greater ecological impacts.
-Quietness: mapped data of human-generated noise pollution is based on field observations and a spatial 
-model using landscape features that influence sound propagation. Greater intensity of human
- noises (higher predicted dBA) is associated with reduced wildland quality and greater ecological impacts.
-*/
+    key.append("rect")
+        .attr("x", -10)
+          .attr("y", -13)
+          .attr("width", 155)
+          .attr("height", 40)
+          .attr("stroke", "#000")
+          .attr("stroke-width", .25)
+          .attr("fill", "none");
+          */
+
+        key.append("circle")
+        .attr("cx", 0)
+        .attr("cy", 0)
+        .attr("r", 5)
+        .attr("fill", "#ddd");
+
+        key.append("rect")
+          .attr("x", -4)
+          .attr("y", 10)
+          .attr("width", 9)
+          .attr("height", 9)
+          .attr("fill", "#bbb")
+          .attr("opacity", .5);
+
+        key.append("text")
+          .attr("x", 10)
+          .attr("y", 3)
+          .text("= Wilderness Study Area")
+          .attr("font-size", "12px");
+
+        key.append("text")
+                  .attr("x", 10)
+                  .attr("y", 18)
+                  .text("= National Park")
+                  .attr("font-size", "12px");
+
+/////////////////upper section///////////////////////////
+var upper = d3.select("#container")
+              .append("div")
+              .html(`<div id="title">
+      <h2>On Average (Median) </h2>
+      <div id="col">
+        <p>
+        Wilder than <br>
+        <span class="Wildness" id="percent">87% </span><br>
+        of National Parks<br<
+
+        </p>
+      </div>
+      <div id="col">
+        <p>
+        Darker than <br>
+        <span class="Darkness" id="percent">44%</span><br>
+        of National Parks
+      </p>
+      </div>
+      <div id="col">
+        <p>
+        Quieter than <br>
+        <span class="Quietness" id="percent">56%</span><br>
+        of National Parks
+      </p>
+      </div>
+
+        </div`);
+
+/////////////////add map buttons////////////////////////////////
+    
+    var mapW = $("#mapContainer").width();
+    buttonPadding = 20,
+    buttonWidth = mapW/attributes.length- buttonPadding;
+
+    for(att of attributes){
+        var i = attributes.indexOf(att);
+
+    d3.select("div#mapContainer")
+        .append("div")
+          .attr("class", function(){
+            if(att == initial) return att + " selected";
+           else return att;
+          })
+          .attr("id", "button")
+          .html(`<h4>${att}</h4>`)
+          .style("width", buttonWidth+"px")
+          .style("left", function(){
+                var left = i*buttonWidth + i*buttonPadding;
+                return left+"px";
+          })
+          .style("top", "-40px")
+          .on("click", labelClick);
 
 
+
+        ///////add axis lines///////
+    d3.select("#container")
+              .append("div")
+              .attr("id", "line")
+                  .style("top", `${yScale(i)+5}px`);
+
+    ////////////variable axis labels/////////
+    d3.select("div#container")
+        .append("div")
+          .attr("id", "axis")
+          .html(`<p>${att}</p>`)
+          .style("left", `${vizW()/2 -40}px`)
+          .style("top", `${yScale(i)-50}px`);  
+
+    }
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ///////end wrapper function
 };
