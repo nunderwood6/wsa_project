@@ -26,6 +26,7 @@ p {
 a {
 	cursor: pointer;
 	font-style: italic;
+	margin: 0 auto;
 }
 
 h1 {

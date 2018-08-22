@@ -79,178 +79,9 @@ var colorizer = function(input, att) {
 
 };
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////
-//////////////////////////////initialize Leaflet map
-
-var topLeft = [49, -115],
-    botRight = [44.295, -105];
-
-//make user bounds
-var boundTopLeft = [53, -120],
-    boundBotRight = [40, -100];
-
-var bounds = L.latLngBounds(boundTopLeft, boundBotRight);
-
-var myMap = L.map('mapid', {
-        maxBounds: bounds,
-        maxBoundsViscosity:0.1,
-}).fitBounds([topLeft, botRight]);
-
-L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png', {
-  attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="http://cartodb.com/attributions">CartoDB</a>',
-  subdomains: 'abcd',
-  maxZoom: 14,
-  minZoom: 5
-}).addTo(myMap);
-
-var symbolLayer = L.featureGroup();
-
-/////////////add WSA geojsons
-$.getJSON('data/wsa.geojson', function(data){
-
-
-/////////////////////////////////////////////////////////////////////////////
-//Circles
-
-symbolLayer.addTo(myMap);
-
-//sort data so smaller symbols drawn on top
-  var wsaData = data.features.sort(function(a,b){
-   return b.properties.wsa_data_1 - a.properties.wsa_data_1;
-  });
-
-//set w/h of svg and translate
-  var w = 30,
-      h = 30,
-     tx = 6,
-     ty = 6;
-
-//make radius scale
-var rScale = d3.scaleSqrt()
-               .domain(d3.extent(wsaData.map(wsa => wsa.properties["wsa_data_1"])))
-               .range([5,15]);
-
-//////////////create div for each area/////////////////////////////////////////
-  for(var wsa of wsaData) {
-    var name = comp(wsa.properties["MANAME"]);
-
-  //find centroid
-    var centroid = d3.geoCentroid(wsa);
-
-    var lat = centroid[0],
-        long = centroid[1];
-
-//create feature specific icon
-//add marker to layer group so entire group can be targeted on zoom
-
-    var divIcon = L.divIcon({className: name});
-    var marker = L.marker([long, lat], {icon: divIcon});
-    symbolLayer.addLayer(marker);
-}
-
-//add svg's
-function addSymbols() {
-for(var wsa of wsaData) {
-var name = comp(wsa.properties["MANAME"]);
-
-
-//append svg to divIcon, add circle symbols
-    var symbol = d3.select(`div.${name}`)
-                  .append("svg")
-                  .attr("overflow", "visible")
-                  .attr("transform", "translate(" + tx + "," + ty + ")")
-                  .attr("width", w)
-                  .attr("height", h)
-                .append("circle")
-                  .attr("class", "symbol")
-                  .attr("id", `${name}`)
-                  .attr("cx", 0)
-                  .attr("cy", 0)
-                  .attr("r", function(d){
-                      return rScale(wsa.properties["wsa_data_1"]);
-                  })
-                  .attr("fill", function(d){
-                        return colorizer(name,initial);
-                      
-                  })
-                  .attr("fill-opacity", .8)
-                  .on("mouseover", function(d){
-                    d3.select(this).attr("opacity", .5)
-                  })
-                  .on("mouseout", function(d){
-                    d3.select(this).attr("opacity", .8)
-                  })
-                  .on("click", function(d){
-                      var target = d3.select(this).attr("id").replace("WildernessStudyArea", "");
-                      leafZoom(target);
-                      setTimeout(function(){
-                        openPopup("key", false, false, target)
-                      }, 300);
-                      dotClickFocus(target);
-                      
-                  });
-  }
-};
-addSymbols();
-//////////////////////////////////////////////////////////////////////////////////////////////
-///load geojson
-
-////////////////////////////////////////////add geojson's/////////////////////////////////
-  jsonLayer = L.geoJson(data, {
-
-onEachFeature: function(feature, layer){
-
-  var wsa = comp(feature.properties["MANAME"]);
-
- //set styles based on attribute
-  layer.setStyle(style(feature));
-
-  ///store bounds in map for access by d3 listener
-  layerKey[wsa] = [layer, feature];
-
-  layer.on("click", function(e){
-      leafZoom(wsa);
-      openPopup(e, layer, feature);
-      dotClickFocus(wsa);
-  });
-
-  layer.on("mouseover",function (e){
-    layer.setStyle(highStyle(feature));
-  });
-
-  layer.on("mouseout", function(e){
-      layer.setStyle(style(feature));
-  });
-  
-}
-  });
-
-/////////////////////////////////////////////////////////////////////////////////////////////////
-
-///add and remove dots and json depending on zoom level. Fires at end of transition
-myMap.on("zoomend", function(){
-
-    if(myMap.getZoom() < 8 && myMap.hasLayer(jsonLayer)) {
-      myMap.removeLayer(jsonLayer);
-    }
-    if (myMap.getZoom() >= 8 && myMap.hasLayer(jsonLayer) == false)
-    {
-        myMap.addLayer(jsonLayer);
-    }   
-    if(myMap.getZoom() >= 8 && myMap.hasLayer(symbolLayer)) {
-      myMap.removeLayer(symbolLayer);
-    }
-    //leaflet destroys contents of div on remove, repopulate with symbols
-    if (myMap.getZoom() < 8 && myMap.hasLayer(symbolLayer) == false)
-    {
-        myMap.addLayer(symbolLayer);
-        addSymbols();
-    }   
-})
-
-});
-
+///////////////////////
+/////interaction listener functions
+////////////////
 ///////////////////////////////////////////////////////////////
 var labelClick = function(d) {
 
@@ -947,6 +778,188 @@ var upper = d3.select("#container")
           .style("top", `${yScale(i)-50}px`);  
 
     }
+///////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////
+//////////////////////////////initialize Leaflet map
+
+var topLeft = [49, -115],
+    botRight = [44.295, -105];
+
+//make user bounds
+var boundTopLeft = [53, -120],
+    boundBotRight = [40, -100];
+
+var bounds = L.latLngBounds(boundTopLeft, boundBotRight);
+
+var myMap = L.map('mapid', {
+        maxBounds: bounds,
+        maxBoundsViscosity:0.1,
+}).fitBounds([topLeft, botRight]);
+
+L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png', {
+  attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="http://cartodb.com/attributions">CartoDB</a>',
+  subdomains: 'abcd',
+  maxZoom: 14,
+  minZoom: 5
+}).addTo(myMap);
+
+var symbolLayer = L.featureGroup();
+
+/////////////add WSA geojsons
+$.getJSON('data/wsa.geojson', function(data){
+
+
+/////////////////////////////////////////////////////////////////////////////
+//Circles
+
+symbolLayer.addTo(myMap);
+
+//sort data so smaller symbols drawn on top
+  var wsaData = data.features.sort(function(a,b){
+   return b.properties.wsa_data_1 - a.properties.wsa_data_1;
+  });
+
+//set w/h of svg and translate
+  var w = 30,
+      h = 30,
+     tx = 6,
+     ty = 6;
+
+//make radius scale
+var rScale = d3.scaleSqrt()
+               .domain(d3.extent(wsaData.map(wsa => wsa.properties["wsa_data_1"])))
+               .range([5,15]);
+
+//////////////create div for each area/////////////////////////////////////////
+  for(var wsa of wsaData) {
+    var name = comp(wsa.properties["MANAME"]);
+
+  //find centroid
+    var centroid = d3.geoCentroid(wsa);
+
+    var lat = centroid[0],
+        long = centroid[1];
+
+//create feature specific icon
+//add marker to layer group so entire group can be targeted on zoom
+
+    var divIcon = L.divIcon({className: name});
+    var marker = L.marker([long, lat], {icon: divIcon});
+    symbolLayer.addLayer(marker);
+}
+
+//add svg's
+function addSymbols() {
+for(var wsa of wsaData) {
+var name = comp(wsa.properties["MANAME"]);
+
+
+//append svg to divIcon, add circle symbols
+    var symbol = d3.select(`div.${name}`)
+                  .append("svg")
+                  .attr("overflow", "visible")
+                  .attr("transform", "translate(" + tx + "," + ty + ")")
+                  .attr("width", w)
+                  .attr("height", h)
+                .append("circle")
+                  .attr("class", "symbol")
+                  .attr("id", `${name}`)
+                  .attr("cx", 0)
+                  .attr("cy", 0)
+                  .attr("r", function(d){
+                      return rScale(wsa.properties["wsa_data_1"]);
+                  })
+                  .attr("fill", function(d){
+                      console.log(name);
+                        return colorizer(name,initial);
+                      
+                  })
+                  .attr("fill-opacity", .8)
+                  .on("mouseover", function(d){
+                    d3.select(this).attr("opacity", .5)
+                  })
+                  .on("mouseout", function(d){
+                    d3.select(this).attr("opacity", .8)
+                  })
+                  .on("click", function(d){
+                      var target = d3.select(this).attr("id").replace("WildernessStudyArea", "");
+                      leafZoom(target);
+                      setTimeout(function(){
+                        openPopup("key", false, false, target)
+                      }, 300);
+                      dotClickFocus(target);
+                      
+                  });
+  }
+};
+addSymbols();
+//////////////////////////////////////////////////////////////////////////////////////////////
+///load geojson
+
+////////////////////////////////////////////add geojson's/////////////////////////////////
+  jsonLayer = L.geoJson(data, {
+
+onEachFeature: function(feature, layer){
+
+  var wsa = comp(feature.properties["MANAME"]);
+
+ //set styles based on attribute
+  layer.setStyle(style(feature));
+
+  ///store bounds in map for access by d3 listener
+  layerKey[wsa] = [layer, feature];
+
+  layer.on("click", function(e){
+      leafZoom(wsa);
+      openPopup(e, layer, feature);
+      dotClickFocus(wsa);
+  });
+
+  layer.on("mouseover",function (e){
+    layer.setStyle(highStyle(feature));
+  });
+
+  layer.on("mouseout", function(e){
+      layer.setStyle(style(feature));
+  });
+  
+}
+  });
+
+///////////////////////////////////////////////////////////////////
+
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+///add and remove dots and json depending on zoom level. Fires at end of transition
+myMap.on("zoomend", function(){
+
+    if(myMap.getZoom() < 8 && myMap.hasLayer(jsonLayer)) {
+      myMap.removeLayer(jsonLayer);
+    }
+    if (myMap.getZoom() >= 8 && myMap.hasLayer(jsonLayer) == false)
+    {
+        myMap.addLayer(jsonLayer);
+    }   
+    if(myMap.getZoom() >= 8 && myMap.hasLayer(symbolLayer)) {
+      myMap.removeLayer(symbolLayer);
+    }
+    //leaflet destroys contents of div on remove, repopulate with symbols
+    if (myMap.getZoom() < 8 && myMap.hasLayer(symbolLayer) == false)
+    {
+        myMap.addLayer(symbolLayer);
+        addSymbols();
+    }   
+})
+
+});
+
+
+
+
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
