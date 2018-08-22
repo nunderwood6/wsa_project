@@ -1,7 +1,8 @@
 function wrapper(){
 
 var parksDrawn = true;
-
+var selected;
+var selectedDotRef;
 var addParks;
 var removeParks;
 var dotClickFocus;
@@ -218,53 +219,29 @@ var parksData = wsaParksData.filter(unit => unit["Class"].includes("Park"))
                             .filter(unit => unit["Darkness"] != "NA")
                             .filter(unit => unit["Area"] != "Isle Royale National Park");
 
-//////////calculate averages for park data///////////
-var parksAvg = {};
+
 for(var att of attributes){
+    ////calculate percentile of wsa compared to parks
+    for(var wsa of wsaData) {
+        var parkCounter = 0;
+        for(var park of parksData){
+            if(wsa[att] > park[att]){
+              parkCounter+=1;
+            }
+        }
+        //add park percentile attribute
+        wsa[att+"Avg"]= (parkCounter/parksData.length*100).toFixed();
+    ////calculate wsa percentile relative to other wsa
+        var wsaCounter = 0;
+        for(var other of wsaData){
+            if(wsa[att] > other[att]){
+              wsaCounter+=1;
+            }
+        }
+        //add wsa percentile attribute
+        wsa[att+"WsaAvg"]= (wsaCounter/(wsaData.length-1)*100).toFixed();
 
-    var sorted = parksData.sort(function(a,b) {
-        return a[att] - b[att];
-    });
-
-
-////calculate percentile of wsa compared to parks
-for(var wsa of wsaData) {
-
-///store name
-    var key = wsa["Area"];
-    var keyFinder = function(zone){
-      return zone["Area"] == key ;
-    };
-///add to parks
-    sorted.push(wsa);
-
-//resort with wsa added
-    sorted.sort(function(a,b){
-      return a[att] - b[att];
-    });
-
-//find index of wsa
-    var index = sorted.findIndex(keyFinder);
-  
-//remove wsa from parks
-    sorted.splice(index, 1);
-
-//add avg as att to wsaData
-    wsa[att+"Avg"] =((index-1)/sorted.length*100).toFixed();
 }
-
-    var findMedian = function(arr) {
-      if(arr.length%2 != 0) {
-        return arr[Math.ceil(arr.length/2)][att];
-      }
-      else {
-        return ( parseFloat(arr[(arr.length/2)][att]) + parseFloat(arr[arr.length/2 + 1][att])) / 2;
-      }
-    };
-
-
-    parksAvg[att] = findMedian(sorted);
-
 }
 
 console.log(wsaData);
@@ -426,13 +403,16 @@ var dotHover = function(d,dotRef) {
 
 //////////click event function
 
-  dotClickFocus = function (wsa,dotRef) {
-
+dotClickFocus = function (wsa,dotRef) {
+  
 /////////////////input from leaflet///////////////////
 if(typeof wsa == "string") {
 var wsa = d3.select(`circle.${comp(wsa)}`).data()[0];
 var dotRef = initial;
 }
+
+selected = wsa;
+selectedDotRef = dotRef;
 
   ///remove any already focused
  dotSvg.selectAll("circle")
@@ -481,10 +461,19 @@ d3.select("#title h2").text(`${wsa["Area"]}`);
 
 //change percent
 for(var att of attributes) {
-d3.select(`span.${att}`).html(wsa[att+"Avg"]+ "%")
-          .style("color", function(){
-      return colorizer(wsa, att);
-    });
+
+    if(parksDrawn){
+        d3.select(`span.${att}`).html(wsa[att+"Avg"]+ "%")
+                  .style("color", function(){
+              return colorizer(wsa, att);
+            });
+  } else {
+        d3.select(`span.${att}`).html(wsa[att+"WsaAvg"]+ "%")
+                  .style("color", function(){
+              return colorizer(wsa, att);
+            });
+    }
+
 
 }
 
@@ -716,7 +705,6 @@ var upper = d3.select("#container")
         Wilder than <br>
         <span class="Wildness" id="percent">87% </span><br>
         of National Parks<br<
-
         </p>
       </div>
       <div id="col">
@@ -733,7 +721,6 @@ var upper = d3.select("#container")
         of National Parks
       </p>
       </div>
-
         </div`);
 
 /////////////////add map buttons////////////////////////////////
@@ -871,7 +858,6 @@ var name = comp(wsa.properties["MANAME"]);
                       return rScale(wsa.properties["wsa_data_1"]);
                   })
                   .attr("fill", function(d){
-                      console.log(name);
                         return colorizer(name,initial);
                       
                   })
@@ -888,8 +874,7 @@ var name = comp(wsa.properties["MANAME"]);
                       setTimeout(function(){
                         openPopup("key", false, false, target)
                       }, 300);
-                      dotClickFocus(target);
-                      
+                      dotClickFocus(target); 
                   });
   }
 };
@@ -955,9 +940,6 @@ myMap.on("zoomend", function(){
 })
 
 });
-
-
-
 
 
 
