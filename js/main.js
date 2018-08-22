@@ -1,7 +1,7 @@
 function wrapper(){
 
 var parksDrawn = true;
-var selected;
+var selectedWsa;
 var selectedDotRef;
 var addParks;
 var removeParks;
@@ -404,14 +404,14 @@ var dotHover = function(d,dotRef) {
 //////////click event function
 
 dotClickFocus = function (wsa,dotRef) {
-  
+
 /////////////////input from leaflet///////////////////
 if(typeof wsa == "string") {
 var wsa = d3.select(`circle.${comp(wsa)}`).data()[0];
 var dotRef = initial;
 }
 
-selected = wsa;
+selectedWsa = wsa;
 selectedDotRef = dotRef;
 
   ///remove any already focused
@@ -458,6 +458,14 @@ d3.selectAll(".focus").classed("hidden", true);
 
 //switch title
 d3.select("#title h2").text(`${wsa["Area"]}`);
+
+//if text unchanged change 
+var percentOf = d3.select("span.state").text();
+console.log(percentOf);
+console.log(parksDrawn);
+if(parksDrawn == false && percentOf == " National Parks"){
+  d3.selectAll("span.state").text("threatened Montana WSA's");
+}
 
 //change percent
 for(var att of attributes) {
@@ -639,10 +647,20 @@ if(d3.select(this).classed("selected") == false){
 
               if(parksDrawn==true){
                 removeParks();
+                if(selectedWsa != undefined){
+                d3.selectAll("span.state").text("threatened Montana WSA's");
+                }
               }
               else{
                 addParks();
+                d3.selectAll("span.state").text("National Parks");
               }
+
+              //change percentage text
+              if(selectedWsa != undefined){
+                dotClickFocus(selectedWsa, selectedDotRef);
+              }
+              
 
             }
           });
@@ -698,27 +716,28 @@ var key = dotSvg.append("g")
 /////////////////upper section///////////////////////////
 var upper = d3.select("#container")
               .append("div")
+                .attr("class", "colHolder")
               .html(`<div id="title">
       <h2>On Average (Median) </h2>
       <div id="col">
         <p>
         Wilder than <br>
         <span class="Wildness" id="percent">87% </span><br>
-        of National Parks<br<
+        of <span class="state"> National Parks</span><br<
         </p>
       </div>
       <div id="col">
         <p>
         Darker than <br>
         <span class="Darkness" id="percent">44%</span><br>
-        of National Parks
+        of <span class="state"> National Parks</span>
       </p>
       </div>
       <div id="col">
         <p>
         Quieter than <br>
         <span class="Quietness" id="percent">56%</span><br>
-        of National Parks
+        of <span class="state"> National Parks</span>
       </p>
       </div>
         </div`);
