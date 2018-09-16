@@ -476,6 +476,7 @@ div#button {
 
 div#button h4 {
 	font-weight: normal;
+	cursor: pointer;
 }
 
 div#button {
