@@ -327,7 +327,7 @@ dotSvg.append("g")
                 }
   })
   .on("mouseover", function(d){
-
+    d3.select(".hint").remove();
     if( $(this).hasClass("strongFocus") ==false) {
       dotHover(d,this);
     }
@@ -712,6 +712,27 @@ var key = dotSvg.append("g")
                   .attr("y", 18)
                   .text("= National Park")
                   .attr("font-size", "12px");
+
+
+//add interactivity hint
+
+var hint = dotSvg.append("g")
+              .attr("class", "hint");
+
+             hint.append("text")
+                .attr("x", vizW()-100)
+                .attr("y", yScale(0)-35)
+                .attr("width", "50px")
+                .attr("font-size", "12px")
+                .text("Hover or click");
+
+            hint.append("text")
+                .attr("x", vizW()-93)
+                .attr("y", yScale(0)-25)
+                .attr("width", "50px")
+                .attr("font-size", "12px")
+                .text("to explore!");
+
 
 /////////////////upper section///////////////////////////
 var upper = d3.select("#container")
